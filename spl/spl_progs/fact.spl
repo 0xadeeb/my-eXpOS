@@ -1,0 +1,13 @@
+alias num R0;
+alias n R1;
+alias prd R2;
+prd = 1;
+num = 1;
+n = 5;
+while( num <= n ) do
+	prd = prd * num;
+	num = num + 1;
+endwhile;
+print prd;
+
+

@@ -1,0 +1,13 @@
+*
+!.gitignore
+!Makefile
+!download.sh
+!README.*
+!tools
+!tools/*
+!*l
+*l/*
+!*l/*l_progs
+!*l/samples
+!*l/*l_progs/*.*l
+!*l/samples/*.*l

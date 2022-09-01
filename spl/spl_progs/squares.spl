@@ -1,0 +1,9 @@
+alias counter R0;
+alias sq R1;
+counter = 1;
+while (counter <= 5) do
+      sq = counter * counter;
+      breakpoint;
+      counter = counter + 1;
+endwhile;
+print sum;
