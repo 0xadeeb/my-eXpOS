@@ -1,0 +1,26 @@
+//int main()
+//{
+//    decl
+//        int a;
+//    enddecl
+//    begin
+//        while(1==1) do
+//            a=1;
+//        endwhile;
+//        return 0;
+//    end
+//}
+int main()
+{
+    decl
+        int temp,num;
+    enddecl
+    begin
+        num=101;
+        while ( num <= 200 ) do
+            temp = exposcall ( "Write" , -2, num );
+            num = num + 1;
+        endwhile;
+        return 0;
+    end
+}

@@ -1,5 +1,5 @@
-#!/usr/bin/zsh
-# Will have to source this in ~/.zshrc
+#!/usr/bin/env
+# Will have to source this in shell rc file
 
 osPath=$HOME/myexpos
 

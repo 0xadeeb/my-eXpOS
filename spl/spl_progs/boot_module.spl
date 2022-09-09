@@ -1,0 +1,68 @@
+// Load library codes from disk
+loadi(63, 13);
+loadi(64, 14);
+
+// Load Timer Interrupt
+loadi(4, 17);
+loadi(5, 18);
+
+// Load INT7
+loadi(16, 29);
+loadi(17, 30);
+
+// Load idle program
+loadi(69, 11);
+loadi(70, 12);
+
+// Load Init program
+loadi(65, 7);
+loadi(66, 8);
+
+// Intrupts
+loadi(22, 35);
+loadi(23, 36);
+loadi(2, 15);
+loadi(3, 16);
+
+// Process table of init program
+[PROCESS_TABLE + 1 * 16 + 1] = 1;
+[PROCESS_TABLE + 1 * 16 + 4] = CREATED;
+[PROCESS_TABLE + 1 * 16 + 11] = 80;
+[PROCESS_TABLE + 1 * 16 + 12] = 0;
+[PROCESS_TABLE + 1 * 16 + 13] = 8 * 512;
+[PROCESS_TABLE + 1 * 16 + 14] = PAGE_TABLE_BASE + 20;
+[PROCESS_TABLE + 1 * 16 + 15] = 10;
+
+//Init Program
+//Library
+[PAGE_TABLE_BASE + 1 * 20 + 0] = 63;
+[PAGE_TABLE_BASE + 1 * 20 + 1] = "0100";
+[PAGE_TABLE_BASE + 1 * 20 + 2] = 64;
+[PAGE_TABLE_BASE + 1 * 20 + 3] = "0100";
+
+//Heap
+[PAGE_TABLE_BASE + 1 * 20 + 4] = 78;
+[PAGE_TABLE_BASE + 1 * 20 + 5] = "0110";
+[PAGE_TABLE_BASE + 1 * 20 + 6] = 79;
+[PAGE_TABLE_BASE + 1 * 20 + 7] = "0110";
+
+//Code
+[PAGE_TABLE_BASE + 1 * 20 + 8] = 65;
+[PAGE_TABLE_BASE + 1 * 20 + 9] = "0100";
+[PAGE_TABLE_BASE + 1 * 20 + 10] = 66;
+[PAGE_TABLE_BASE + 1 * 20 + 11] = "0100";
+[PAGE_TABLE_BASE + 1 * 20 + 12] = -1;
+[PAGE_TABLE_BASE + 1 * 20 + 13] = "0000";
+[PAGE_TABLE_BASE + 1 * 20 + 14] = -1;
+[PAGE_TABLE_BASE + 1 * 20 + 15] = "0000";
+
+//Stack
+[PAGE_TABLE_BASE + 1 * 20 + 16] = 76;
+[PAGE_TABLE_BASE + 1 * 20 + 17] = "0110";
+[PAGE_TABLE_BASE + 1 * 20 + 18] = 77;
+[PAGE_TABLE_BASE + 1 * 20 + 19] = "0110";
+
+// Set IP in top of the stack
+[76 * 512] = [65 * 512 + 1];
+
+return;
