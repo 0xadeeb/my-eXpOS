@@ -24,13 +24,18 @@ loadi(23, 36);
 loadi(2, 15);
 loadi(3, 16);
 
+// Module 5
+loadi(50,63);
+loadi(51,64);
+
 // Process table of init program
+[PROCESS_TABLE + 1 * 16] = 0;
 [PROCESS_TABLE + 1 * 16 + 1] = 1;
 [PROCESS_TABLE + 1 * 16 + 4] = CREATED;
 [PROCESS_TABLE + 1 * 16 + 11] = 80;
 [PROCESS_TABLE + 1 * 16 + 12] = 0;
 [PROCESS_TABLE + 1 * 16 + 13] = 8 * 512;
-[PROCESS_TABLE + 1 * 16 + 14] = PAGE_TABLE_BASE + 20;
+[PROCESS_TABLE + 1 * 16 + 14] = PAGE_TABLE_BASE + 1 * 20;
 [PROCESS_TABLE + 1 * 16 + 15] = 10;
 
 //Init Program
@@ -64,5 +69,59 @@ loadi(3, 16);
 
 // Set IP in top of the stack
 [76 * 512] = [65 * 512 + 1];
+
+// Code of even program
+loadi(83, 69);
+//loadi(84, next page number of even prg);
+
+// Process table of even program
+[PROCESS_TABLE + 2 * 16] = 0;
+[PROCESS_TABLE + 2 * 16 + 1] = 2;
+[PROCESS_TABLE + 2 * 16 + 4] = CREATED;
+[PROCESS_TABLE + 2 * 16 + 11] = 89;
+[PROCESS_TABLE + 2 * 16 + 12] = 0;
+[PROCESS_TABLE + 2 * 16 + 13] = 8 * 512;
+[PROCESS_TABLE + 2 * 16 + 14] = PAGE_TABLE_BASE + 2 * 20;
+[PROCESS_TABLE + 2 * 16 + 15] = 10;
+
+//Even Program
+//Library
+[PAGE_TABLE_BASE + 2 * 20 + 0] = 63;
+[PAGE_TABLE_BASE + 2 * 20 + 1] = "0100";
+[PAGE_TABLE_BASE + 2 * 20 + 2] = 64;
+[PAGE_TABLE_BASE + 2 * 20 + 3] = "0100";
+
+//Heap
+[PAGE_TABLE_BASE + 2 * 20 + 4] = 85;
+[PAGE_TABLE_BASE + 2 * 20 + 5] = "0110";
+[PAGE_TABLE_BASE + 2 * 20 + 6] = 86;
+[PAGE_TABLE_BASE + 2 * 20 + 7] = "0110";
+
+//Code
+[PAGE_TABLE_BASE + 2 * 20 + 8] = 83;
+[PAGE_TABLE_BASE + 2 * 20 + 9] = "0100";
+[PAGE_TABLE_BASE + 2 * 20 + 10] = 84;
+[PAGE_TABLE_BASE + 2 * 20 + 11] = "0100";
+[PAGE_TABLE_BASE + 2 * 20 + 12] = -1;
+[PAGE_TABLE_BASE + 2 * 20 + 13] = "0000";
+[PAGE_TABLE_BASE + 2 * 20 + 14] = -1;
+[PAGE_TABLE_BASE + 2 * 20 + 15] = "0000";
+
+//Stack
+[PAGE_TABLE_BASE + 2 * 20 + 16] = 87;
+[PAGE_TABLE_BASE + 2 * 20 + 17] = "0110";
+[PAGE_TABLE_BASE + 2 * 20 + 18] = 88;
+[PAGE_TABLE_BASE + 2 * 20 + 19] = "0110";
+
+// Set IP in top of the stack
+[87 * 512] = [83 * 512 + 1];
+
+alias i R0;
+i = 3;
+while (i < MAX_PROC_NUM) do
+    [PROCESS_TABLE + i * 16] = -1;
+    [PROCESS_TABLE + i * 16 + 4] = TERMINATED;
+    i = i + 1;
+endwhile;
 
 return;

@@ -1,1 +1,10 @@
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 4] = TERMINATED;
+alias pid R0;
+pid = 1;
+while (pid < MAX_PROC_NUM) do
+    if ([PROCESS_TABLE + (pid * 16) + 4] != TERMINATED) then
+        call CONTEXT_SWITCH;
+    endif;
+    pid = pid + 1;
+endwhile;
 halt;

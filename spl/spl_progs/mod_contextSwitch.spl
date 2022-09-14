@@ -1,0 +1,50 @@
+//module 5
+alias currentPID R0;
+currentPID = [SYSTEM_STATUS_TABLE + 1];
+
+multipush(BP);
+
+alias proc_table_entry R1;
+proc_table_entry = PROCESS_TABLE + currentPID * PT_ENTRY_SIZE;
+
+[proc_table_entry + 12] = SP % PAGE_SIZE;
+[proc_table_entry + 14] = PTBR;
+[proc_table_entry + 15] = PTLR;
+
+alias newPid R2;
+newPid = IDLE_PROCESS;
+
+alias proc R3;
+proc = (currentPID + 1) % MAX_PROC_NUM;
+
+alias status R4;
+while (proc != currentPID) do
+    status = [PROCESS_TABLE + proc * PT_ENTRY_SIZE + 4];
+    if (proc != IDLE_PROCESS && (status == CREATED || status == READY)) then
+        newPid = proc;
+        break;
+    endif;
+        proc = (proc + 1) % MAX_PROC_NUM;
+endwhile;
+
+[SYSTEM_STATUS_TABLE + 1] = newPid;
+
+alias newProcessTable R4;
+newProcessTable = PROCESS_TABLE + PT_ENTRY_SIZE * newPid;
+
+PTBR = [newProcessTable + 14];
+PTLR = [newProcessTable + 15];
+
+if ([newProcessTable + 4] == CREATED) then
+    SP = [newProcessTable + 13];
+    [newProcessTable + 4] = RUNNING;
+	[newProcessTable + 9] = 0;
+    ireturn;
+endif;
+
+[newProcessTable + 4] = RUNNING;
+
+SP =  [newProcessTable+11] * PAGE_SIZE + [newProcessTable+12];
+
+multipop(BP);
+return;

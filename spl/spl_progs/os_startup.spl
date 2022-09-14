@@ -8,6 +8,7 @@ PTBR = PAGE_TABLE_BASE;
 PTLR = 10;
 
 // Process table of idle program
+[PROCESS_TABLE + 0] = 0;
 [PROCESS_TABLE + 1] = 0;
 [PROCESS_TABLE + 4] = RUNNING;
 [PROCESS_TABLE + 11] = 82;
