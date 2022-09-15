@@ -32,3 +32,10 @@ expl() {
     ./expl $filePath
     cd $currentDir
 }
+
+load() {
+    currentDir=$(pwd)
+    cd $osPath/xfs-interface
+    ./xfs-interface run ../tools/load
+    cd $currentDir
+}

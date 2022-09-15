@@ -1,0 +1,10 @@
+load --os ../spl/spl_progs/os_startup.xsm
+load --int=7 ../spl/spl_progs/int7.xsm
+load --library ../expl/library.lib
+load --init ../expl/expl_progs/odd.xsm
+load --idle ../expl/expl_progs/idle.xsm
+load --exhandler ../spl/spl_progs/exception.xsm
+load --int=timer ../spl/spl_progs/timer.xsm
+load --int=10 ../spl/spl_progs/int10.xsm
+load --module 5 ../spl/spl_progs/context_switch_module.xsm
+load --module 7 ../spl/spl_progs/asg14/boot_module.xsm
