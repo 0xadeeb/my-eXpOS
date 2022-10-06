@@ -1,0 +1,36 @@
+alias functionNum R1;
+alias currentPID R2;
+
+if (functionNum == ACQUIRE_TERMINAL) then
+    alias statusAddr R3;
+    statusAddr = PROCESS_TABLE + 16 * currentPID + 4;
+    while ([TERMINAL_STATUS_TABLE] == 1) do
+        [statusAddr] = WAIT_TERMINAL;
+        multipush(R1, R2, R3);
+        call CONTEXT_SWITCH;
+        multipop(R1, R2, R3);
+    endwhile;
+    [TERMINAL_STATUS_TABLE] = 1;
+    [TERMINAL_STATUS_TABLE + 1] = currentPID;
+    breakpoint;
+    return;
+endif;
+
+if (functionNum == RELEASE_TERMINAL) then
+    if (currentPID != [TERMINAL_STATUS_TABLE + 1]) then
+        R0 = -1;
+        return;
+    endif;
+    [TERMINAL_STATUS_TABLE] = 0;
+    alias itr R3;
+    itr = 0;
+    while (itr < 20) do
+        if ([PROCESS_TABLE + itr * 16 + 4] == WAIT_TERMINAL) then
+            [PROCESS_TABLE + itr * 16 + 4] = READY;
+        endif;
+    itr = itr + 1;
+    endwhile;
+    R0 = 0;
+    breakpoint;
+    return;
+endif;
