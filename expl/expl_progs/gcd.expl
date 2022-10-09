@@ -1,0 +1,39 @@
+decl
+    int gcd(int a, int b);
+enddecl
+
+int gcd(int a, int b) {
+    decl
+        int res;
+    enddecl
+    begin
+        if ((a % b) == 0) then
+            res = b;
+        else
+            res = gcd(b, a % b);
+        endif;
+        return res;
+    end
+}
+
+int main()
+{
+    decl
+        int a, b;
+    enddecl
+    begin
+        write("First number");
+        read(a);
+        write("Second number");
+        read(b);
+        write("GCD:");
+       
+        if (a > b) then
+            write(gcd(a, b));
+        else
+            write(gcd(b, a));
+        endif;
+
+        return 0;
+    end
+}

@@ -3,7 +3,7 @@
 
 // Update SP
 [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
-SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512 - 1;
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * PAGE_SIZE - 1;
 backup;
 
 //update state of current process
@@ -18,7 +18,6 @@ while(PId < MAX_PROC_NUM) do
 	endif;
 	PId = PId + 1;
 endwhile;
-
 call CONTEXT_SWITCH;
 
 restore;

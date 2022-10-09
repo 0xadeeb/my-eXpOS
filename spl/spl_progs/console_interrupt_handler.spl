@@ -1,0 +1,22 @@
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * PAGE_SIZE - 1;
+backup;
+
+alias PId R0;
+PId = [TERMINAL_STATUS_TABLE + 1];
+
+alias processTable R1;
+processTable = PROCESS_TABLE + PId * PT_ENTRY_SIZE;
+
+[processTable + 8] = P0;
+
+multipush(R0, R1);
+R1 = RELEASE_TERMINAL;
+R2 = PId;
+call RESOURCE_MANAGER;
+multipop(R0, R1);
+
+restore;
+SP = [PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13];
+
+ireturn;

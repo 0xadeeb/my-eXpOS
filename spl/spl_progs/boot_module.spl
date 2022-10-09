@@ -1,28 +1,38 @@
-// Load library codes from disk
+//Load library codes from disk
 loadi(63, 13);
 loadi(64, 14);
 
-// Load Timer Interrupt
+//Timer Interrupt
 loadi(4, 17);
 loadi(5, 18);
 
-// Load INT7
-loadi(16, 29);
-loadi(17, 30);
+//console interrupt handler
+loadi(8, 21);
+loadi(9, 22);
 
-// Load idle program
+//idle program
 loadi(69, 11);
 loadi(70, 12);
 
-// Load Init program
+//Init program
 loadi(65, 7);
 loadi(66, 8);
 
-// Intrupts
-loadi(22, 35);
-loadi(23, 36);
+//exception handler routine
 loadi(2, 15);
 loadi(3, 16);
+
+//int 6
+loadi(14, 27);
+loadi(15, 28);
+
+//int 7
+loadi(16, 29);
+loadi(17, 30);
+
+//int 10
+loadi(22, 35);
+loadi(23, 36);
 
 // Module 5
 loadi(50 ,63);
@@ -87,7 +97,7 @@ loadi(83, 69);
 // Process table of even program
 [PROCESS_TABLE + 2 * 16] = 0;
 [PROCESS_TABLE + 2 * 16 + 1] = 2;
-[PROCESS_TABLE + 2 * 16 + 4] = CREATED;
+[PROCESS_TABLE + 2 * 16 + 4] = TERMINATED;
 [PROCESS_TABLE + 2 * 16 + 11] = 89;
 [PROCESS_TABLE + 2 * 16 + 12] = 0;
 [PROCESS_TABLE + 2 * 16 + 13] = 8 * 512;

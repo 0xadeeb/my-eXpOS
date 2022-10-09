@@ -4,37 +4,47 @@
 osPath=$HOME/myexpos
 
 xfsi() {
-    currentDir=$(pwd)
+    local currentDir=$PWD
     cd $osPath/xfs-interface
     ./xfs-interface
     cd $currentDir
 }
 
 xsm() {
-    currentDir=$(pwd)
+    local currentDir=$PWD
     cd $osPath/xsm
     ./xsm $1
     cd $currentDir
 }
 
 spl() {
-    filePath=$(readlink -f $1)
-    currentDir=$(pwd)
+    local filePath=$(readlink -f $1)
+    local currentDir=$PWD
     cd $osPath/spl
     ./spl $filePath
     cd $currentDir
 }
 
 expl() {
-    filePath=$(readlink -f $1)
-    currentDir=$(pwd)
+    local filePath=$(readlink -f $1)
+    local currentDir=$PWD
     cd $osPath/expl
     ./expl $filePath
     cd $currentDir
 }
 
 load() {
-    currentDir=$(pwd)
+    local currentDir=$PWD
+    cd $osPath/spl/spl_progs
+    for i in *.spl
+    do
+        spl $i
+    done
+    cd $osPath/expl/expl_progs
+    for i in *.expl
+    do
+        expl $i
+    done
     cd $osPath/xfs-interface
     ./xfs-interface run ../tools/load
     cd $currentDir
