@@ -2,11 +2,19 @@
 
 download() {
     component="$1"
-    echo "Downloading $component .. "
+    echo "Downloading $component..."
     wget "https://github.com/eXpOSNitc/$component/archive/master.zip" -c -q -O "$component.zip"
     unzip -q "$component".zip
-    mv "$component"-master "$component"
+    if [ -d "$component" ]; then
+        cp -r -n "$component"-master/* "$component"
+        rm -r "$component"-master
+    else
+        mv "$component"-master "$component"
+    fi
     rm "$component".zip
+    if [ -f "$component"/.gitignore ]; then
+        mv "$component"/.gitignore "$component"/dot-gitignore
+    fi
     echo "$component downloaded."
 }
 
