@@ -1,0 +1,118 @@
+//exec system call
+alias processTable R9;
+processTable = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * PT_ENTRY_SIZE;
+
+// Set mode flag to system call no
+[processTable + 9] = INT_EXEC;
+
+// Save user stack in process table
+[processTable + 13] = SP;
+
+// Set kernal stack to user area of process table
+SP = PAGE_SIZE * [processTable + 11] - 1;
+
+alias userSP R0;
+userSP = [processTable + 13];
+
+alias retAdr R1;
+retAdr = [PTBR + 2 * (userSP - 1) / PAGE_SIZE] * PAGE_SIZE + (userSP - 1) % PAGE_SIZE;
+
+alias fileName R2;
+fileName =  [[PTBR + 2 * (userSP - 4) / PAGE_SIZE] * PAGE_SIZE + (userSP - 4) % PAGE_SIZE];
+
+alias i R3;
+i = 0;
+while (i < MAX_FILE_NUM) do
+    if ([INODE_TABLE + i * 16] == EXEC && [INODE_TABLE + i * 16 + 1] == fileName) then
+        break;
+    endif;
+    i = i + 1;
+endwhile;
+breakpoint;
+if (i == MAX_FILE_NUM) then
+    [retAdr] = -1;
+    SP = userSP;
+else 
+    alias inode_idx R3;
+    multipush(R0, R1, R2, R3, R9);
+    R1 = EXIT_PROCESS;
+    R2 = [SYSTEM_STATUS_TABLE + 1];
+    call PROCESS_MANAGER;
+    multipop(R0, R1, R2, R3, R9);
+
+    // Reclaim the user page of the destroyed process
+    alias userPgNo R4;
+    userPgNo = [processTable + 11] / PAGE_SIZE;
+    [MEMORY_FREE_LIST + userPgNo] = [MEMORY_FREE_LIST + userPgNo] + 1;
+    [SYSTEM_STATUS_TABLE + 2] = [SYSTEM_STATUS_TABLE + 2] - 1;
+
+    // Initialize kernal stack of the new program
+    SP = userPgNo * PAGE_SIZE - 1;
+
+    [processTable + 4] = RUNNING;
+    [processTable + 7] = inode_idx;
+
+    alias page_table_entry R0;
+    page_table_entry = PAGE_TABLE_BASE + [SYSTEM_STATUS_TABLE + 1] * 20;
+
+    // Library
+    [page_table_entry + 0] = 63;
+    [page_table_entry + 1] = "0100";
+    [page_table_entry + 2] = 64;
+    [page_table_entry + 3] = "0100";
+
+    // Initialize Stack and heap
+    alias i R5;
+    alias freePage R6;
+    i = 0;
+    while (i < 4) do
+        multipush(R0, R1, R2, R3, R4, R5, R9);
+        R1 = GET_FREE_PAGE;
+        call MEMORY_MANAGER;
+        freePage = R0;
+        multipop(R0, R1, R2, R3, R4, R5, R9);
+        if (i < 2) then
+            [page_table_entry + 4 + 2 * i] = freePage;
+            [page_table_entry + 4 + 2 * i + 1] = "0110";
+        else
+            [page_table_entry + 16 + 2 * (i - 2)] = freePage;
+            [page_table_entry + 16 + 2 * (i - 2) + 1] = "0110";
+        endif;
+        i = i + 1;
+    endwhile;
+
+    alias blockNum R5;
+    blockNum = 0;
+    while (blockNum < 4) do
+        if ([INODE_TABLE + inode_idx * 16 + 8 + blockNum] == -1) then
+            break;
+        endif;
+        blockNum = blockNum + 1;
+    endwhile;
+
+    // Initialize Code pages
+    alias i R7;
+    i = 0;
+    while (i < blockNum) do
+        multipush(R0, R1, R2, R3, R4, R5, R7, R9);
+        R1 = GET_FREE_PAGE;
+        call MEMORY_MANAGER;
+        freePage = R0;
+        multipop(R0, R1, R2, R3, R4, R5, R7, R9);
+        [page_table_entry + 8 + i * 2] = freePage;
+        [page_table_entry + 8 + i * 2 + 1] = "0100";
+        loadi(freePage, [INODE_TABLE + inode_idx * 16 + 8 + i]);
+        i = i + 1;
+    endwhile;
+    while (i < 4) do
+        [page_table_entry + 8 + i * 2] = -1;
+        [page_table_entry + 8 + i * 2 + 1] = "0000";
+        i = i + 1;
+    endwhile;
+    // Store IP in top of the stack
+    [[page_table_entry + 16] * PAGE_SIZE] = [[page_table_entry + 8] * PAGE_SIZE + 1];
+    SP = 8 * PAGE_SIZE;
+endif;
+
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 9] = 0;
+ireturn;

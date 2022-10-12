@@ -2,7 +2,7 @@ alias processTable R9;
 processTable = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16;
 
 // Set mode flag to system call no
-[processTable + 9] = 5;
+[processTable + 9] = INT_WRITE;
 
 // Save user stack in process table
 [processTable + 13] = SP;

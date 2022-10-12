@@ -1,0 +1,43 @@
+// Mod 2
+alias functionNum R1;
+
+if (functionNum == GET_FREE_PAGE) then
+    alias currentPID R2;
+    [SYSTEM_STATUS_TABLE + 3] = [SYSTEM_STATUS_TABLE + 3] + 1;
+    while ([SYSTEM_STATUS_TABLE + 2] == 0) do
+        [PROCESS_TABLE + currentPID * PT_ENTRY_SIZE + 4] = WAIT_MEM;
+        multipush(R1, R2);
+        call CONTEXT_SWITCH;
+        multipop(R1, R2);
+    endwhile;
+    [SYSTEM_STATUS_TABLE + 2] = [SYSTEM_STATUS_TABLE + 2] - 1;
+    [SYSTEM_STATUS_TABLE + 3] = [SYSTEM_STATUS_TABLE + 3] - 1;
+
+    alias page R0;
+    page = 76;
+    while (page < 128) do
+        if ([MEMORY_FREE_LIST + page] == 0) then
+            [MEMORY_FREE_LIST + page] = 1;
+            break;
+        endif;
+        page = page + 1;
+    endwhile;
+    return;
+endif;
+
+if (functionNum == RELEASE_PAGE) then
+    alias page R2;
+    [MEMORY_FREE_LIST + page] = [MEMORY_FREE_LIST + page] - 1;
+    if ([MEMORY_FREE_LIST + page] == 0) then
+        [SYSTEM_STATUS_TABLE + 2] = [SYSTEM_STATUS_TABLE + 2] + 1;
+        alias pid R3;
+        pid = 0;
+        while (pid < MAX_PROC_NUM) do
+            if ([PROCESS_TABLE + pid * PT_ENTRY_SIZE + 4] == WAIT_MEM) then
+                [PROCESS_TABLE + pid * PT_ENTRY_SIZE + 4] = READY;
+            endif;
+            pid = pid + 1;
+        endwhile;
+    endif;
+    return;
+endif;

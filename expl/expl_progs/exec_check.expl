@@ -1,0 +1,13 @@
+int main()
+{
+    decl
+        int fname, temp;
+    enddecl
+    begin
+        write("File Name:");
+        read(fname);
+        temp = exposcall("Exec", fname);
+        write("Failed");
+        return 1;
+    end
+}

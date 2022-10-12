@@ -35,17 +35,26 @@ expl() {
 
 load() {
     local currentDir=$PWD
-    cd $osPath/spl/spl_progs
-    for i in *.spl
-    do
-        spl $i
-    done
-    cd $osPath/expl/expl_progs
-    for i in *.expl
-    do
-        expl $i
-    done
-    cd $osPath/xfs-interface
-    ./xfs-interface run ../tools/load
+    if [ -z $1 ]
+    then
+        cd $osPath/spl/spl_progs
+        for i in *.spl
+        do
+            spl $i
+        done
+        cd $osPath/expl/expl_progs
+        for i in *.expl
+        do
+            expl $i
+        done
+        cd $osPath/xfs-interface
+        ./xfs-interface run ../tools/load
+    else
+        local filePath=$(readlink -f $1)
+        expl $filePath
+        echo "load --exec ${filePath%.expl}.xsm" > /tmp/loadCommand
+        cd $osPath/xfs-interface
+        ./xfs-interface run /tmp/loadCommand
+    fi
     cd $currentDir
 }

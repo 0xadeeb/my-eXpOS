@@ -1,0 +1,47 @@
+// Mod 1
+alias functionNum R1;
+alias currentPID R2;
+
+if (functionNum == EXIT_PROCESS) then
+    multipush(R1, R2);
+    R1 = FREE_PAGE_TABLE;
+    call PROCESS_MANAGER;
+    R1 = FREE_USER_AREA_PAGE;
+    call PROCESS_MANAGER;
+    multipop(R1, R2);
+    [PROCESS_TABLE + currentPID * PT_ENTRY_SIZE + 4] = TERMINATED;
+    return;
+endif;
+
+if (functionNum == FREE_USER_AREA_PAGE) then
+    multipush(R1, R2);
+    R1 = RELEASE_PAGE;
+    R2 = [PROCESS_TABLE + currentPID * PT_ENTRY_SIZE + 11];
+    call MEMORY_MANAGER;
+    multipop(R1, R2);
+    return;
+endif;
+
+if (functionNum == FREE_PAGE_TABLE) then
+    alias page_table_entry R3;
+    alias i R4;
+    page_table_entry = [PROCESS_MANAGER + currentPID * PT_ENTRY_SIZE + 14];
+    i = 0;
+    while (i < 10) do
+        if ([page_table_entry + 2 * i] == -1) then
+            i = i + 1;
+            continue;
+        endif;
+        if (i >= 2) then
+            multipush(R1, R2, R3, R4);
+            R2 = [page_table_entry + 2 * i];
+            R1 = RELEASE_PAGE;
+            call MEMORY_MANAGER;
+            multipop(R1, R2, R3, R4);
+        endif;
+        [page_table_entry + 2 * i] = -1;
+        [page_table_entry + 2 * i + 1] = "0000";
+        i = i + 1;
+    endwhile;
+    return;
+endif;
