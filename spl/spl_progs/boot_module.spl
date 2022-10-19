@@ -1,10 +1,14 @@
-//Load library codes from disk
+//library
 loadi(63, 13);
 loadi(64, 14);
 
-//Timer Interrupt
+//timer Interrupt
 loadi(4, 17);
 loadi(5, 18);
+
+//disk interrupt handler
+loadi(6, 19);
+loadi(7, 20);
 
 //console interrupt handler
 loadi(8, 21);
@@ -62,6 +66,7 @@ loadi(51 ,64);
 loadi(59, 3);
 
 [TERMINAL_STATUS_TABLE] = 0;
+[DISK_STATUS_TABLE] = 0;
 
 // Process table of init program
 [PROCESS_TABLE + 16] = 0;
@@ -72,6 +77,16 @@ loadi(59, 3);
 [PROCESS_TABLE + 29] = 8 * PAGE_SIZE;
 [PROCESS_TABLE + 30] = PAGE_TABLE_BASE + 20;
 [PROCESS_TABLE + 31] = 10;
+
+// Per process resource table of init
+alias pprm R0;
+pprm = 81 * PAGE_SIZE - 16;
+alias idx R1;
+idx = 0;
+while (idx < 16) do
+    [pprm + idx] = -1;
+    idx = idx + 2;
+endwhile;
 
 //Init Program
 //Library
@@ -126,6 +141,8 @@ while (i < MAX_MEM_PAGE) do
     i = i + 1;
 endwhile;
 [SYSTEM_STATUS_TABLE + 3] = 0;
-[SYSTEM_STATUS_TABLE + 2] = MAX_MEM_PAGE - 83;
+// MAX_MEM_PAGE set to be 512 not 128 spl error
+// [SYSTEM_STATUS_TABLE + 2] = MAX_MEM_PAGE - 83;
+[SYSTEM_STATUS_TABLE + 2] = 128 - 83;
 
 return;

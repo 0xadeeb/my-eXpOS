@@ -13,7 +13,7 @@ xfsi() {
 xsm() {
     local currentDir=$PWD
     cd $osPath/xsm
-    ./xsm $1
+    ./xsm $@
     cd $currentDir
 }
 

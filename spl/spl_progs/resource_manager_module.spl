@@ -32,3 +32,15 @@ if (functionNum == RELEASE_TERMINAL) then
     R0 = 0;
     return;
 endif;
+
+if (functionNum == ACQUIRE_DISK) then
+    while ([DISK_STATUS_TABLE] == 1) do
+        [PROCESS_TABLE + currentPID * PT_ENTRY_SIZE + 4] = WAIT_DISK;
+        multipush(R1, R2);
+        call SCHEDULER;
+        multipop(R1, R2);
+    endwhile;
+    [DISK_STATUS_TABLE] = 1;
+    [DISK_STATUS_TABLE + 4] = currentPID;
+    return;
+endif;

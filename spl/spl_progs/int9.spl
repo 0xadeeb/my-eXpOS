@@ -28,7 +28,7 @@ while (i < MAX_FILE_NUM) do
     endif;
     i = i + 1;
 endwhile;
-breakpoint;
+
 if (i == MAX_FILE_NUM) then
     [retAdr] = -1;
     SP = userSP;
@@ -42,12 +42,23 @@ else
 
     // Reclaim the user page of the destroyed process
     alias userPgNo R4;
-    userPgNo = [processTable + 11] / PAGE_SIZE;
+    userPgNo = [processTable + 11];
     [MEMORY_FREE_LIST + userPgNo] = [MEMORY_FREE_LIST + userPgNo] + 1;
     [SYSTEM_STATUS_TABLE + 2] = [SYSTEM_STATUS_TABLE + 2] - 1;
 
     // Initialize kernal stack of the new program
     SP = userPgNo * PAGE_SIZE - 1;
+
+    // Per process resource manager
+    // (Last 16 words of the user area page)
+    alias pprm R5;
+    pprm = (userPgNo + 1) * PAGE_SIZE - 16;
+    alias idx R6;
+    idx = 0;
+    while (idx < 16) do
+        [pprm + idx] = -1;
+        idx = idx + 2;
+    endwhile;
 
     [processTable + 4] = RUNNING;
     [processTable + 7] = inode_idx;
@@ -99,9 +110,18 @@ else
         call MEMORY_MANAGER;
         freePage = R0;
         multipop(R0, R1, R2, R3, R4, R5, R7, R9);
+
         [page_table_entry + 8 + i * 2] = freePage;
         [page_table_entry + 8 + i * 2 + 1] = "0100";
-        loadi(freePage, [INODE_TABLE + inode_idx * 16 + 8 + i]);
+
+        multipush(R0, R1, R2, R3, R4, R5, R7, R9);
+        R4 = [INODE_TABLE + inode_idx * 16 + 8 + i];
+        R3 = freePage;
+        R2 = [SYSTEM_STATUS_TABLE + 1];
+        R1 = DISK_LOAD;
+        call DEVICE_MANAGER;
+        multipop(R0, R1, R2, R3, R4, R5, R7, R9);
+
         i = i + 1;
     endwhile;
     while (i < 4) do
