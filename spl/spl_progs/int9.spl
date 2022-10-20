@@ -63,74 +63,60 @@ else
     [processTable + 4] = RUNNING;
     [processTable + 7] = inode_idx;
 
-    alias page_table_entry R0;
-    page_table_entry = PAGE_TABLE_BASE + [SYSTEM_STATUS_TABLE + 1] * 20;
-
     // Library
-    [page_table_entry + 0] = 63;
-    [page_table_entry + 1] = "0100";
-    [page_table_entry + 2] = 64;
-    [page_table_entry + 3] = "0100";
+    [PTBR + 0] = 63;
+    [PTBR + 1] = "0100";
+    [PTBR + 2] = 64;
+    [PTBR + 3] = "0100";
 
-    // Initialize Stack and heap
-    alias i R5;
-    alias freePage R6;
-    i = 0;
-    while (i < 4) do
-        multipush(R0, R1, R2, R3, R4, R5, R9);
-        R1 = GET_FREE_PAGE;
-        call MEMORY_MANAGER;
-        freePage = R0;
-        multipop(R0, R1, R2, R3, R4, R5, R9);
-        if (i < 2) then
-            [page_table_entry + 4 + 2 * i] = freePage;
-            [page_table_entry + 4 + 2 * i + 1] = "0110";
-        else
-            [page_table_entry + 16 + 2 * (i - 2)] = freePage;
-            [page_table_entry + 16 + 2 * (i - 2) + 1] = "0110";
-        endif;
-        i = i + 1;
-    endwhile;
+    // Heap lazy allocation
+    [PTBR + 4] = -1;
+    [PTBR + 5] = "0000";
+    [PTBR + 6] = -1;
+    [PTBR + 7] = "0000";
 
-    alias blockNum R5;
-    blockNum = 0;
-    while (blockNum < 4) do
-        if ([INODE_TABLE + inode_idx * 16 + 8 + blockNum] == -1) then
-            break;
-        endif;
-        blockNum = blockNum + 1;
-    endwhile;
+    // Stack
+    multipush(R3, R4, R9);
+    R1 = GET_FREE_PAGE;
+    call MEMORY_MANAGER;
+    [PTBR + 16] = R0;
+    [PTBR + 17] = "0110";
+    R1 = GET_FREE_PAGE;
+    call MEMORY_MANAGER;
+    [PTBR + 18] = R0;
+    [PTBR + 19] = "0110";
+    multipop(R3, R4, R9);
 
-    // Initialize Code pages
-    alias i R7;
-    i = 0;
-    while (i < blockNum) do
-        multipush(R0, R1, R2, R3, R4, R5, R7, R9);
-        R1 = GET_FREE_PAGE;
-        call MEMORY_MANAGER;
-        freePage = R0;
-        multipop(R0, R1, R2, R3, R4, R5, R7, R9);
+    // Code pages
+    multipush(R3, R4, R9);
+    R1 = GET_CODE_PAGE;
+    R2 = [INODE_TABLE + 16 * inode_idx + 8];
+    call MEMORY_MANAGER;
+    [PTBR + 8] = R0;
+    [PTBR + 9] = "0100";
+    multipop(R3, R4, R9);
+    [PTBR + 10] = -1;
+    [PTBR + 11] = "0000";
+    [PTBR + 12] = -1;
+    [PTBR + 13] = "0000";
+    [PTBR + 14] = -1;
+    [PTBR + 15] = "0000";
+    
+    // Initialize the disk map table
+    alias disk_map_entry R0;
+    disk_map_entry = DISK_MAP_TABLE + 10 * [SYSTEM_STATUS_TABLE+1];
 
-        [page_table_entry + 8 + i * 2] = freePage;
-        [page_table_entry + 8 + i * 2 + 1] = "0100";
+    [disk_map_entry + 2] = -1;
+    [disk_map_entry + 3] = -1;
+    [disk_map_entry + 4] = [INODE_TABLE + 16 * inode_idx + 8];
+    [disk_map_entry + 5] = [INODE_TABLE + 16 * inode_idx + 9];
+    [disk_map_entry + 6] = [INODE_TABLE + 16 * inode_idx + 10];
+    [disk_map_entry + 7] = [INODE_TABLE + 16 * inode_idx + 11];
+    [disk_map_entry + 8] = -1;
+    [disk_map_entry + 9] = -1;
 
-        multipush(R0, R1, R2, R3, R4, R5, R7, R9);
-        R4 = [INODE_TABLE + inode_idx * 16 + 8 + i];
-        R3 = freePage;
-        R2 = [SYSTEM_STATUS_TABLE + 1];
-        R1 = DISK_LOAD;
-        call DEVICE_MANAGER;
-        multipop(R0, R1, R2, R3, R4, R5, R7, R9);
-
-        i = i + 1;
-    endwhile;
-    while (i < 4) do
-        [page_table_entry + 8 + i * 2] = -1;
-        [page_table_entry + 8 + i * 2 + 1] = "0000";
-        i = i + 1;
-    endwhile;
     // Store IP in top of the stack
-    [[page_table_entry + 16] * PAGE_SIZE] = [[page_table_entry + 8] * PAGE_SIZE + 1];
+    [[PTBR + 16] * PAGE_SIZE] = [[PTBR + 8] * PAGE_SIZE + 1];
     SP = 8 * PAGE_SIZE;
 endif;
 

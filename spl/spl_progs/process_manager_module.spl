@@ -27,6 +27,7 @@ if (functionNum == FREE_PAGE_TABLE) then
     alias i R4;
     page_table_entry = [PROCESS_MANAGER + currentPID * PT_ENTRY_SIZE + 14];
     i = 0;
+    // Release all the pages
     while (i < 10) do
         if ([page_table_entry + 2 * i] == -1) then
             i = i + 1;
@@ -43,5 +44,24 @@ if (functionNum == FREE_PAGE_TABLE) then
         [page_table_entry + 2 * i + 1] = "0000";
         i = i + 1;
     endwhile;
+
+    // Release stack, heap blocks
+    alias dmt R5;
+    i = 2;
+    while (i < 10) do
+        dmt = DISK_MAP_TABLE + 10 * currentPID + i;
+        if ((i < 4) || (i > 7)) then
+            if ([dmt] != -1) then
+                multipush(R1, R2, R3, R4, R5);
+                R2 = [dmt];
+                R1 = RELEASE_BLOCK;
+                call MEMORY_MANAGER;
+                multipop(R1, R2, R3, R4, R5);
+            endif;
+        endif;
+        [dmt] = -1;
+        i = i + 1;
+    endwhile;
+
     return;
 endif;

@@ -1,0 +1,68 @@
+// Set mode flag
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 9] = -1;
+
+// Switch to kernel stack
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * PAGE_SIZE - 1;
+backup;
+
+multipush(EIP);
+
+alias userSP R0;
+userSP = [PROCESS_TABLE + 16 * [SYSTEM_STATUS_TABLE + 1] + 13];
+
+if (EC != 0) then
+    print EIP;
+    if(userSP == PTLR * PAGE_SIZE - 1) then
+        print "StackOverflow";
+    endif;
+    if(EC == 1) then
+        print "BadInstructn";
+    endif;
+    if(EC == 2) then
+        print "IllegalMemAcc";
+    endif;
+    if(EC == 3) then
+        print "ArithmeticExc";
+    endif;
+
+    R1 = EXIT_PROCESS;
+    R2 = [SYSTEM_STATUS_TABLE + 1];
+    call PROCESS_MANAGER;
+
+    call INT_10;
+else
+    if (EPN == 2 || EPN == 3) then
+        multipush(R0);
+        R1 = GET_FREE_PAGE;
+        R2 = [SYSTEM_STATUS_TABLE + 1];
+        call MEMORY_MANAGER;
+        [PTBR + 4] = R0;
+        [PTBR + 5] = "1110";
+
+        R1 = GET_FREE_PAGE;
+        R2 = [SYSTEM_STATUS_TABLE + 1];
+        call MEMORY_MANAGER;
+        [PTBR + 6] = R0;
+        [PTBR + 7] = "1110";
+        multipop(R0);
+    else
+        multipush(R0);
+        R3 = [SYSTEM_STATUS_TABLE + 1];
+        R2 = [DISK_MAP_TABLE + 10 * R3 + EPN];
+        R1 = GET_CODE_PAGE;
+        call MEMORY_MANAGER;
+        [PTBR + 2 * EPN] = R0;
+        [PTBR + 2 * EPN + 1] = "1100";
+        multipop(R0);
+    endif;
+
+    multipop(EIP);
+    restore;
+
+    SP = [PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13];
+    SP = SP + 1;
+    [[PTBR + 2 * (SP / PAGE_SIZE)] * PAGE_SIZE + SP % PAGE_SIZE] = EIP;
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 9] = 0;
+    ireturn;
+endif;

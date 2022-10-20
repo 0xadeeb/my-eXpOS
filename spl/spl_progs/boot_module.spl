@@ -65,6 +65,10 @@ loadi(51 ,64);
 //inode table
 loadi(59, 3);
 
+//disk free list
+loadi(61, 2);
+
+
 [TERMINAL_STATUS_TABLE] = 0;
 [DISK_STATUS_TABLE] = 0;
 
@@ -116,6 +120,18 @@ endwhile;
 [PAGE_TABLE_BASE + 37] = "0110";
 [PAGE_TABLE_BASE + 38] = 77;
 [PAGE_TABLE_BASE + 39] = "0110";
+
+//Disk map list of init
+[DISK_MAP_TABLE + 10] = -1;
+[DISK_MAP_TABLE + 11] = -1;
+[DISK_MAP_TABLE + 12] = -1;
+[DISK_MAP_TABLE + 13] = -1;
+[DISK_MAP_TABLE + 14] = 7;
+[DISK_MAP_TABLE + 15] = 8;
+[DISK_MAP_TABLE + 16] = -1;
+[DISK_MAP_TABLE + 17] = -1;
+[DISK_MAP_TABLE + 18] = -1;
+[DISK_MAP_TABLE + 19] = -1;
 
 // Set IP in top of the stack
 [76 * 512] = [65 * 512 + 1];
