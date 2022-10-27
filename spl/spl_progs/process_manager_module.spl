@@ -2,6 +2,27 @@
 alias functionNum R1;
 alias currentPID R2;
 
+if (functionNum == GET_PCB_ENTRY) then
+    alias pid R0;
+    alias processTable R3;
+    pid = 1;
+    processTable = PROCESS_TABLE + PT_ENTRY_SIZE * pid;
+    while (pid < MAX_PROC_NUM) do
+        if ([processTable + 4] == TERMINATED) then
+            [processTable + 4] = ALLOCATED;
+            [processTable + 1] = pid;
+            [processTable + 14] = PAGE_TABLE_BASE + 20 * pid;
+            [processTable + 15] = 10;
+            return;
+        endif;
+        pid = pid + 1;
+        processTable = processTable + 16;
+    endwhile;
+
+    pid = -1;
+    return;
+endif;
+
 if (functionNum == EXIT_PROCESS) then
     multipush(R1, R2);
     R1 = FREE_PAGE_TABLE;
@@ -9,6 +30,7 @@ if (functionNum == EXIT_PROCESS) then
     R1 = FREE_USER_AREA_PAGE;
     call PROCESS_MANAGER;
     multipop(R1, R2);
+
     [PROCESS_TABLE + currentPID * PT_ENTRY_SIZE + 4] = TERMINATED;
     return;
 endif;
@@ -45,7 +67,7 @@ if (functionNum == FREE_PAGE_TABLE) then
         i = i + 1;
     endwhile;
 
-    // Release stack, heap blocks
+    // Release stack, heap disk blocks
     alias dmt R5;
     i = 2;
     while (i < 10) do

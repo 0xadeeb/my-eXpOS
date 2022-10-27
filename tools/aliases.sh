@@ -52,9 +52,10 @@ load() {
     else
         local filePath=$(readlink -f $1)
         expl $filePath
-        echo "load --exec ${filePath%.expl}.xsm" > /tmp/loadCommand
+        echo "rm ${filePath%.expl}.xsm" > /tmp/loadCommand
+        echo "load --exec ${filePath%.expl}.xsm" >> /tmp/loadCommand
         cd $osPath/xfs-interface
-        ./xfs-interface run /tmp/loadCommand
+        ./xfs-interface run /tmp/loadCommand > /dev/null 2>&1
     fi
     cd $currentDir
 }

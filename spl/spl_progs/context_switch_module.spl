@@ -36,6 +36,7 @@ PTBR = [newProcessTable + 14];
 PTLR = [newProcessTable + 15];
 
 if ([newProcessTable + 4] == CREATED) then
+    BP = [[newProcessTable + 11] * PAGE_SIZE];
     SP = [newProcessTable + 13];
     [newProcessTable + 4] = RUNNING;
 	[newProcessTable + 9] = 0;

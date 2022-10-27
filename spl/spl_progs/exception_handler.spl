@@ -26,10 +26,6 @@ if (EC != 0) then
         print "ArithmeticExc";
     endif;
 
-    R1 = EXIT_PROCESS;
-    R2 = [SYSTEM_STATUS_TABLE + 1];
-    call PROCESS_MANAGER;
-
     call INT_10;
 else
     if (EPN == 2 || EPN == 3) then

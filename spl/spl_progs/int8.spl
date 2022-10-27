@@ -1,0 +1,150 @@
+//Fork sys call
+alias processTable R9;
+processTable = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16;
+
+// Set mode flag to system call no
+[processTable + 9] = INT_FORK;
+
+// Save user stack in process table
+[processTable + 13] = SP;
+
+// Set kernal stack to user area of process table
+SP = PAGE_SIZE * [processTable + 11] - 1;
+
+alias userSP R0;
+userSP = [processTable + 13];
+
+alias retAdr R1;
+retAdr = [PTBR + 2 * (userSP - 1) / PAGE_SIZE] * PAGE_SIZE + (userSP - 1) % PAGE_SIZE;
+
+alias newPID R2;
+
+multipush(R0, R1, R9);
+R1 = GET_PCB_ENTRY;
+call PROCESS_MANAGER;
+newPID = R0;
+multipop(R0, R1, R9);
+
+if (newPID == -1) then
+   // no free PID
+   [retAdr] = -1;
+else
+    if ([PTBR + 4] == -1) then
+        multipush(R0, R1, R2, R9);
+        R1 = GET_FREE_PAGE;
+        R2 = [SYSTEM_STATUS_TABLE + 1];
+        call MEMORY_MANAGER;
+        [PTBR + 4] = R0;
+        [PTBR + 5] = "0110";
+
+        R1 = GET_FREE_PAGE;
+        R2 = [SYSTEM_STATUS_TABLE + 1];
+        call MEMORY_MANAGER;
+        [PTBR + 6] = R0;
+        [PTBR + 7] = "0110";
+        multipop(R0, R1, R2, R9);
+    endif;
+    alias childPageTable R3;
+    childPageTable = PAGE_TABLE_BASE + 20 * newPID;
+
+    multipush(R9, R0, R1, R2, R3);
+    // Stack pages for child 
+    R1 = GET_FREE_PAGE;
+    R2 = [SYSTEM_STATUS_TABLE + 1];
+    call MEMORY_MANAGER;
+
+    multipop(R3);
+    [childPageTable + 16] = R0;
+    [childPageTable + 17] = "0110";
+    multipush(R3);
+
+    R1 = GET_FREE_PAGE;
+    R2 = [SYSTEM_STATUS_TABLE + 1];
+    call MEMORY_MANAGER;
+
+    multipop(R3);
+    [childPageTable + 18] = R0;
+    [childPageTable + 19] = "0110";
+    multipush(R3);
+
+    // User area page for the child
+    R1 = GET_FREE_PAGE;
+    R2 = [SYSTEM_STATUS_TABLE + 1];
+    call MEMORY_MANAGER;
+
+    multipop(R2, R3);
+    [PROCESS_TABLE + 16 * newPID + 11] = R0;
+
+    multipop(R9, R0, R1);
+
+    // Initialize process table of the child
+    alias childProcessTable R4;
+    childProcessTable  = PROCESS_TABLE + PT_ENTRY_SIZE * newPID;
+
+    [childProcessTable + 1] = newPID;
+    [childProcessTable + 2] = [SYSTEM_STATUS_TABLE + 1];
+    [childProcessTable + 3] = [processTable + 3];
+    [childProcessTable + 4] = CREATED;
+    [childProcessTable + 6] = [processTable + 6];
+    [childProcessTable + 7] = [processTable + 7];
+    [childProcessTable + 9] = 0;
+    [childProcessTable + 10] = [processTable + 10];
+    [childProcessTable + 12] = 0;
+    [childProcessTable + 13] = [processTable + 13];
+
+    // copy per-process resource table
+    alias i R5;
+    alias l R6;
+    alias j R7;
+    i = ([childProcessTable + 11] + 1) * PAGE_SIZE - 16;
+    l = i + 16;
+    j = ([processTable + 11] + 1) * PAGE_SIZE - 16;
+    while (i < l) do
+        [i] = [j];
+        i = i + 1;
+        j = j + 1;
+    endwhile;
+
+    // copy disk map table
+    i = DISK_MAP_TABLE + 10 * newPID;
+    l = i + 10;
+    j = DISK_MAP_TABLE + 10 * [SYSTEM_STATUS_TABLE + 1];
+    while (i < l) do
+        [i] = [j];
+        i = i + 1;
+        j = j + 1;
+    endwhile;
+
+    // Copy parent's page table entry for lib, heap, code
+    i = 0;
+    while (i < 8) do
+        [childPageTable + 2 * i] = [PTBR + 2 * i];
+        [childPageTable + 2 * i + 1] = [PTBR + 2 * i + 1];
+        [MEMORY_FREE_LIST + [PTBR + 2 * i]] = [MEMORY_FREE_LIST + [PTBR + 2 * i]] + 1;
+        i = i + 1;
+    endwhile;
+
+    // copy stack pages
+    alias page R8;
+    page = 16;
+    while (page <= 18) do
+        i = [childPageTable + page] * PAGE_SIZE;
+        l = i + PAGE_SIZE;
+        j = [PTBR + page] * PAGE_SIZE;
+        while (i < l) do
+            [i] = [j];
+            i = i + 1;
+            j = j + 1;
+        endwhile;
+        page = page + 2;
+    endwhile;
+
+    // push BP
+    [[childProcessTable + 11] * PAGE_SIZE] = BP;
+    [retAdr] = newPID;
+    [[childPageTable + 2 * (userSP-1) / 512] * 512 + (userSP - 1) % 512] = 0;
+endif;
+
+[processTable + 9] = 0;
+SP = userSP;
+ireturn; 
