@@ -47,7 +47,7 @@ endif;
 if (functionNum == FREE_PAGE_TABLE) then
     alias page_table_entry R3;
     alias i R4;
-    page_table_entry = [PROCESS_MANAGER + currentPID * PT_ENTRY_SIZE + 14];
+    page_table_entry = [PROCESS_TABLE + currentPID * PT_ENTRY_SIZE + 14];
     i = 0;
     // Release all the pages
     while (i < 10) do
