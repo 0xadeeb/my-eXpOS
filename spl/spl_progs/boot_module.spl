@@ -46,6 +46,14 @@ loadi(21, 34);
 loadi(22, 35);
 loadi(23, 36);
 
+//int 11
+loadi(24, 37);
+loadi(25, 38);
+
+//int 15
+loadi(32, 45);
+loadi(33, 46);
+
 //resource managment module (module 0)
 loadi(40, 53);
 loadi(41, 54);
@@ -162,7 +170,7 @@ while (i < MAX_MEM_PAGE) do
 endwhile;
 [SYSTEM_STATUS_TABLE + 3] = 0;
 // MAX_MEM_PAGE set to be 512 not 128 spl error
-// [SYSTEM_STATUS_TABLE + 2] = MAX_MEM_PAGE - 83;
-[SYSTEM_STATUS_TABLE + 2] = 128 - 83;
+// [SYSTEM_STATUS_TABLE + 2] = MAX_MEM_PAGE - 84;
+[SYSTEM_STATUS_TABLE + 2] = 128 - 84;
 
 return;

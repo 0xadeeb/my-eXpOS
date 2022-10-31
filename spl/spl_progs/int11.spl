@@ -1,0 +1,67 @@
+//wait, signal, getpid, getppid system call
+alias processTable R9;
+processTable = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * PT_ENTRY_SIZE;
+
+// Save user stack in process table
+[processTable + 13] = SP;
+
+// Set kernal stack to user area of process table
+SP = PAGE_SIZE * [processTable + 11] - 1;
+
+alias userSP R0;
+userSP = [processTable + 13];
+
+alias retAdr R1;
+retAdr = [PTBR + 2 * (userSP - 1) / PAGE_SIZE] * PAGE_SIZE + (userSP - 1) % PAGE_SIZE;
+
+alias sysno R2;
+sysno = [[PTBR + 2 * (userSP - 5) / PAGE_SIZE] * PAGE_SIZE + (userSP - 5) % PAGE_SIZE];
+
+// Set mode flag to system call no
+[processTable + 9] = sysno;
+
+if (sysno == INT_GETPID) then
+    [retAdr] = [processTable + 1];
+endif;
+
+if (sysno == INT_GETPPID) then
+    [retAdr] = [processTable + 2];
+endif;
+
+if (sysno == INT_WAIT) then
+    alias waitPID R3;
+    waitPID = [[PTBR + 2 * (userSP - 4) / PAGE_SIZE] * PAGE_SIZE + (userSP - 4) % PAGE_SIZE];
+
+    if (waitPID > 15 || waitPID < 1 
+    || waitPID == [SYSTEM_STATUS_TABLE + 1] 
+    || [PROCESS_TABLE + 16 * waitPID + 4] == TERMINATED) then
+        [retAdr] = -1;
+    else
+        [processTable + 4] = WAIT_PROCESS;
+        [processTable + 5] = waitPID;
+
+        multipush(R9, R0, R1, R2, R3);
+        call CONTEXT_SWITCH;
+        multipop(R9, R0, R1, R2, R3);
+
+        [retAdr] = 0;
+    endif;
+endif;
+
+if (sysno == INT_SIGNAL) then
+    alias proc R3;
+    proc = PROCESS_TABLE + PT_ENTRY_SIZE;
+    while (proc < PROCESS_TABLE + MAX_PROC_NUM * PT_ENTRY_SIZE) do
+        if ([proc + 4] == WAIT_PROCESS && [proc + 5] == [SYSTEM_STATUS_TABLE + 1]) then
+            [proc + 4] = READY;
+            [proc + 5] = -1;
+        endif;
+        proc = proc + 16;
+    endwhile;
+    [retAdr] = 0;
+endif;
+
+exit:
+SP = userSP;
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 9] = 0;
+ireturn;

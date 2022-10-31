@@ -49,13 +49,17 @@ load() {
         done
         cd $osPath/xfs-interface
         ./xfs-interface run ../tools/load
+        cd $currentDir
     else
-        local filePath=$(readlink -f $1)
-        expl $filePath
-        echo "rm ${filePath%.expl}.xsm" > /tmp/loadCommand
-        echo "load --exec ${filePath%.expl}.xsm" >> /tmp/loadCommand
-        cd $osPath/xfs-interface
-        ./xfs-interface run /tmp/loadCommand > /dev/null 2>&1
+        for filename in "$@"
+        do
+            local filePath=$(readlink -f $filename)
+            expl $filePath
+            echo "rm ${filename%.expl}.xsm" > /tmp/loadCommand
+            echo "load --exec ${filePath%.expl}.xsm" >> /tmp/loadCommand
+            cd $osPath/xfs-interface
+            ./xfs-interface run /tmp/loadCommand > /dev/null 2>&1
+            cd $currentDir
+        done
     fi
-    cd $currentDir
 }

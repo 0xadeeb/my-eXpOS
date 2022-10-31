@@ -1,18 +1,15 @@
 //Exit sys call
-[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 9] = INT_EXIT;
+alias processTable R9;
+processTable = PROCESS_TABLE + 16 * [SYSTEM_STATUS_TABLE + 1];
+
+[processTable + 9] = INT_EXIT;
 
 //Set SP to kernel stack
-SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 11] * PAGE_SIZE - 1;
+[processTable + 13] = SP;
+SP = [processTable + 11] * PAGE_SIZE - 1;
+
 R1 = EXIT_PROCESS;
 R2 = [SYSTEM_STATUS_TABLE + 1];
 call PROCESS_MANAGER;
 
-alias pid R0;
-pid = 1;
-while (pid < MAX_PROC_NUM) do
-    if ([PROCESS_TABLE + (pid * 16) + 4] != TERMINATED) then
-        call CONTEXT_SWITCH;
-    endif;
-    pid = pid + 1;
-endwhile;
-halt;
+call CONTEXT_SWITCH;

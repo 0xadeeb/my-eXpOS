@@ -24,12 +24,28 @@ if (functionNum == GET_PCB_ENTRY) then
 endif;
 
 if (functionNum == EXIT_PROCESS) then
+
     multipush(R1, R2);
     R1 = FREE_PAGE_TABLE;
     call PROCESS_MANAGER;
     R1 = FREE_USER_AREA_PAGE;
     call PROCESS_MANAGER;
     multipop(R1, R2);
+
+    if ([PROCESS_TABLE + currentPID * PT_ENTRY_SIZE + 9] != INT_EXEC) then
+        alias proc R3;
+        proc = PROCESS_TABLE + PT_ENTRY_SIZE;
+        while (proc < PROCESS_TABLE + MAX_PROC_NUM * PT_ENTRY_SIZE) do
+            if ([proc + 4] == WAIT_PROCESS && [proc + 5] == currentPID) then
+                [proc + 4] = READY;
+                [proc + 5] = -1;
+            endif;
+            if ([proc + 2] == currentPID) then
+                [proc + 2] = -1;
+            endif;
+            proc = proc + 16;
+        endwhile;
+    endif;
 
     [PROCESS_TABLE + currentPID * PT_ENTRY_SIZE + 4] = TERMINATED;
     return;

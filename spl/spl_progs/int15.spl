@@ -1,0 +1,14 @@
+//shutdown system call
+alias processTable R9;
+processTable = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * PT_ENTRY_SIZE;
+
+// Set mode flag to system call no
+[processTable + 9] = INT_SHUTDOWN;
+
+// Save user stack in process table
+[processTable + 13] = SP;
+
+// Set kernal stack to user area of process table
+SP = PAGE_SIZE * [processTable + 11] - 1;
+
+halt;
