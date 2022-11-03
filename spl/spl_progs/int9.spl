@@ -52,7 +52,7 @@ else
     // Per process resource manager
     // (Last 16 words of the user area page)
     alias pprm R5;
-    pprm = (userPgNo + 1) * PAGE_SIZE - 16;
+    pprm = userPgNo * PAGE_SIZE + RESOURCE_TABLE_OFFSET;
     alias idx R6;
     idx = 0;
     while (idx < 16) do

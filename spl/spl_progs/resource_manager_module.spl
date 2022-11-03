@@ -1,3 +1,4 @@
+//mod 0
 alias functionNum R1;
 alias currentPID R2;
 
@@ -42,5 +43,45 @@ if (functionNum == ACQUIRE_DISK) then
     endwhile;
     [DISK_STATUS_TABLE] = 1;
     [DISK_STATUS_TABLE + 4] = currentPID;
+    return;
+endif;
+
+if (functionNum == ACQUIRE_SEMAPHORE) then
+    alias sem_idx R3;
+    sem_idx = 0;
+    while (sem_idx < MAX_SEM_COUNT) do
+        if ([SEMAPHORE_TABLE + 4 * sem_idx + 1] == 0) then
+            break;
+        endif;
+        sem_idx = sem_idx + 1;
+    endwhile;
+
+    if (sem_idx == MAX_SEM_COUNT) then
+        R0 = -1;
+    else
+        [SEMAPHORE_TABLE + 4 * sem_idx] = -1;
+        [SEMAPHORE_TABLE + 4 * sem_idx + 1] = 1;
+        R0 = sem_idx;
+    endif;
+
+    return;
+endif;
+
+if (functionNum == RELEASE_SEMAPHORE) then
+    alias sem_idx R3;
+    if ([SEMAPHORE_TABLE + 4 * sem_idx] != -1) then
+        [SEMAPHORE_TABLE + 4 * sem_idx] = -1;
+        alias proc R4;
+        proc = 1;
+        while (proc < MAX_PROC_NUM) do
+            if ([PROCESS_TABLE + PT_ENTRY_SIZE * proc + 4] == WAIT_SEMAPHORE && [PROCESS_TABLE + PT_ENTRY_SIZE * proc + 5] == sem_idx) then
+                [PROCESS_TABLE + PT_ENTRY_SIZE * proc + 4] = READY;
+                [PROCESS_TABLE + PT_ENTRY_SIZE * proc + 5] = -1;
+            endif;
+            proc = proc + 1;
+        endwhile;
+    endif;
+
+    [SEMAPHORE_TABLE + 4 * sem_idx + 1] = [SEMAPHORE_TABLE + 4 * sem_idx + 1] - 1;
     return;
 endif;

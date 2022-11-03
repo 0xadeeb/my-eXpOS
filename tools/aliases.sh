@@ -18,48 +18,72 @@ xsm() {
 }
 
 spl() {
-    local filePath=$(readlink -f $1)
     local currentDir=$PWD
-    cd $osPath/spl
-    ./spl $filePath
-    cd $currentDir
+    for filename in "$@"
+    do
+        local filePath=$(readlink -f $filename)
+        cd $osPath/spl
+        op=$(./spl $filePath 2>&1)
+        if [[ ! -z $op ]]
+        then
+            echo "Error compiling $filename"
+            echo "$op" | xargs
+            echo
+        fi
+        cd $currentDir
+    done
 }
 
 expl() {
-    local filePath=$(readlink -f $1)
     local currentDir=$PWD
-    cd $osPath/expl
-    ./expl $filePath
-    cd $currentDir
+    for filename in "$@"
+    do
+        local filePath=$(readlink -f $filename)
+        cd $osPath/expl
+        op=$(./expl $filePath 2>&1)
+        if [[ ! -z $op ]]
+        then
+            echo "Error compiling $filename"
+            echo "$op" | xargs
+            echo
+        fi
+        cd $currentDir
+    done
 }
 
 load() {
     local currentDir=$PWD
-    if [ -z $1 ]
+    if [[ -z $1 ]]
     then
         cd $osPath/spl/spl_progs
-        for i in *.spl
-        do
-            spl $i
-        done
+        spl *.spl
         cd $osPath/expl/expl_progs
-        for i in *.expl
-        do
-            expl $i
-        done
+        expl *.expl
         cd $osPath/xfs-interface
         ./xfs-interface run ../tools/load
-        cd $currentDir
+    elif [[ $1 == "-e" ]]
+    then
+        cd $osPath/expl/expl_progs
+        expl *.expl
+        : > /tmp/loadCommand
+        for filename in *.expl
+        do
+            echo "rm ${filename%.expl}.xsm" >> /tmp/loadCommand
+            echo "load --exec ${$(readlink -f $filename)%.expl}.xsm" >> /tmp/loadCommand
+        done
+        cd $osPath/xfs-interface
+        ./xfs-interface run /tmp/loadCommand > /dev/null 2>&1
     else
+        : > /tmp/loadCommand
         for filename in "$@"
         do
             local filePath=$(readlink -f $filename)
             expl $filePath
-            echo "rm ${filename%.expl}.xsm" > /tmp/loadCommand
+            echo "rm ${filename%.expl}.xsm" >> /tmp/loadCommand
             echo "load --exec ${filePath%.expl}.xsm" >> /tmp/loadCommand
-            cd $osPath/xfs-interface
-            ./xfs-interface run /tmp/loadCommand > /dev/null 2>&1
-            cd $currentDir
         done
+        cd $osPath/xfs-interface
+        ./xfs-interface run /tmp/loadCommand > /dev/null 2>&1
     fi
+    cd $currentDir
 }

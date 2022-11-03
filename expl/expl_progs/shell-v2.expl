@@ -21,7 +21,7 @@ int main()
                 temp = exposcall ("Exec", cmd);
                 if (temp == -1) then
                     write("Cmd not found");
-                    continue;
+                    break;
                 endif;
             endif;
             if (pid != 0) then

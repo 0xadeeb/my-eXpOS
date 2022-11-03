@@ -96,13 +96,17 @@ else
     alias i R5;
     alias l R6;
     alias j R7;
-    i = ([childProcessTable + 11] + 1) * PAGE_SIZE - 16;
+    i = [childProcessTable + 11] * PAGE_SIZE + RESOURCE_TABLE_OFFSET;
     l = i + 16;
-    j = ([processTable + 11] + 1) * PAGE_SIZE - 16;
+    j = [processTable + 11] * PAGE_SIZE + RESOURCE_TABLE_OFFSET;
     while (i < l) do
         [i] = [j];
-        i = i + 1;
-        j = j + 1;
+        [i + 1] = [j + 1];
+        if ([i] == SEMAPHORE) then
+            [SEMAPHORE_TABLE + 4 * [i + 1] + 1] = [SEMAPHORE_TABLE + 4 * [i + 1] + 1] + 1;
+        endif;
+        i = i + 2;
+        j = j + 2;
     endwhile;
 
     // copy disk map table

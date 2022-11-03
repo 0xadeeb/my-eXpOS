@@ -52,6 +52,25 @@ if (functionNum == EXIT_PROCESS) then
 endif;
 
 if (functionNum == FREE_USER_AREA_PAGE) then
+
+    alias resTable R3;
+    resTable = [PROCESS_TABLE + currentPID * PT_ENTRY_SIZE + 11] * PAGE_SIZE + RESOURCE_TABLE_OFFSET;
+
+    alias idx R4;
+    idx = 0;
+
+    while (idx < 8) do
+        if ([resTable + 2 * idx] == SEMAPHORE) then
+        multipush(R1, R2, R3, R4);
+        R3 = [resTable + 2 * idx + 1];
+        R2 = currentPID;
+        R1 = RELEASE_SEMAPHORE;
+        call RESOURCE_MANAGER;
+        multipop(R1, R2, R3, R4);
+        endif;
+        idx = idx + 1;
+    endwhile;
+
     multipush(R1, R2);
     R1 = RELEASE_PAGE;
     R2 = [PROCESS_TABLE + currentPID * PT_ENTRY_SIZE + 11];

@@ -1,0 +1,86 @@
+//Semget and semrelease sys call
+alias processTable R9;
+processTable = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16;
+
+// Save user stack in process table
+[processTable + 13] = SP;
+
+// Set kernal stack to user area of process table
+SP = PAGE_SIZE * [processTable + 11] - 1;
+
+alias userSP R0;
+userSP = [processTable + 13];
+
+alias retAdr R1;
+retAdr = [PTBR + 2 * (userSP - 1) / PAGE_SIZE] * PAGE_SIZE + (userSP - 1) % PAGE_SIZE;
+
+alias sysno R2;
+sysno = [[PTBR + 2 * (userSP - 5) / PAGE_SIZE] * PAGE_SIZE + (userSP - 5) % PAGE_SIZE];
+
+// Set mode flag to system call no
+[processTable + 9] = sysno;
+
+if (sysno == INT_SEMLOCK) then
+    alias sem_id R3;
+    sem_id = [[PTBR + 2 * (userSP - 4) / PAGE_SIZE] * PAGE_SIZE + (userSP - 4) % PAGE_SIZE];
+    alias resTable R4;
+    resTable = [processTable + 11] * PAGE_SIZE + RESOURCE_TABLE_OFFSET;
+    alias semIndex R5;
+    semIndex = resTable + 2 * sem_id;
+
+    if (sem_id < 0 || sem_id > 7 || [semIndex] != SEMAPHORE) then
+        [retAdr] = -1;
+        goto exit;
+    endif;
+
+    while ([SEMAPHORE_TABLE + 4 * [semIndex + 1]] != -1 && [SEMAPHORE_TABLE + 4 * [semIndex + 1]] != [SYSTEM_STATUS_TABLE + 1]) do
+        [processTable + 4] = WAIT_SEMAPHORE;
+        [processTable + 5] = [semIndex + 1];
+        multipush(R9, R0, R1, R2, R3, R4, R5);
+		call CONTEXT_SWITCH;
+		multipop(R9, R0, R1, R2, R3, R4, R5);
+    endwhile;
+    
+    [SEMAPHORE_TABLE + 4 * [semIndex + 1]] = [SYSTEM_STATUS_TABLE + 1];
+    [retAdr] = 0;
+endif;
+
+if (sysno == INT_SEMUNLOCK) then
+    alias sem_id R3;
+    sem_id = [[PTBR + 2 * (userSP - 4) / PAGE_SIZE] * PAGE_SIZE + (userSP - 4) % PAGE_SIZE];
+    alias resTable R4;
+    resTable = [processTable + 11] * PAGE_SIZE + RESOURCE_TABLE_OFFSET;
+    alias semIndex R5;
+    semIndex = resTable + 2 * sem_id;
+
+    if (sem_id < 0 || sem_id > 7 || [semIndex] != SEMAPHORE) then
+        [retAdr] = -1;
+        goto exit;
+    endif;
+
+    if ([SEMAPHORE_TABLE + 4 * [semIndex + 1]] != -1) then
+        if ([SEMAPHORE_TABLE + 4 * [semIndex + 1]] != [SYSTEM_STATUS_TABLE + 1]) then
+            [retAdr] = -2;
+            goto exit;
+        endif;
+        [SEMAPHORE_TABLE + 4 * [semIndex + 1]] = -1;
+
+        alias proc R6;
+        proc = 1;
+
+        while (proc < MAX_PROC_NUM) do
+            if ([PROCESS_TABLE + PT_ENTRY_SIZE * proc + 4] == WAIT_SEMAPHORE && [PROCESS_TABLE + PT_ENTRY_SIZE * proc + 5] == [semIndex + 1]) then
+                [PROCESS_TABLE + PT_ENTRY_SIZE * proc + 4] = READY;
+                [PROCESS_TABLE + PT_ENTRY_SIZE * proc + 5] = -1;
+            endif;
+            proc = proc + 1;
+        endwhile;
+
+        [retAdr] = 0;
+    endif;
+endif;
+
+exit:
+[processTable + 9] = 0;
+SP = userSP;
+ireturn; 
