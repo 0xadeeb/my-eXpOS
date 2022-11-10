@@ -26,6 +26,10 @@ loadi(66, 8);
 loadi(2, 15);
 loadi(3, 16);
 
+//int 4
+loadi(10, 23);
+loadi(11, 24);
+
 //int 6
 loadi(14, 27);
 loadi(15, 28);
@@ -88,13 +92,18 @@ loadi(59, 3);
 //disk free list
 loadi(61, 2);
 
+//root file
+loadi(62, 5);
 
 [TERMINAL_STATUS_TABLE] = 0;
 [DISK_STATUS_TABLE] = 0;
 
+// Current user
+[SYSTEM_STATUS_TABLE] = ROOT;
 // Process table of init program
 [PROCESS_TABLE + 16] = 0;
 [PROCESS_TABLE + 17] = 1;
+[PROCESS_TABLE + 19] = ROOT;
 [PROCESS_TABLE + 20] = CREATED;
 [PROCESS_TABLE + 27] = 80;
 [PROCESS_TABLE + 28] = 0;
@@ -172,12 +181,14 @@ while (i < 83) do
     i = i + 1;
 endwhile;
 // For all the others
-while (i < MAX_MEM_PAGE) do
+
+// MAX_MEM_PAGE set to be 512 not 128 spl error
+//while (i < MAX_MEM_PAGE) do
+while (i < 128) do
     [MEMORY_FREE_LIST + i] = 0;
     i = i + 1;
 endwhile;
 [SYSTEM_STATUS_TABLE + 3] = 0;
-// MAX_MEM_PAGE set to be 512 not 128 spl error
 // [SYSTEM_STATUS_TABLE + 2] = MAX_MEM_PAGE - 83;
 [SYSTEM_STATUS_TABLE + 2] = 128 - 83;
 
@@ -186,6 +197,23 @@ i = 0;
 while (i < MAX_SEM_COUNT) do
     [SEMAPHORE_TABLE + 4 * i] = -1;
     [SEMAPHORE_TABLE + 4 * i + 1] = 0;
+    i = i + 1;
+endwhile;
+
+// Initialize file status table
+i = 0;
+while (i < MAX_FILE_NUM) do
+    [FILE_STATUS_TABLE + 4 * i] = -1;
+    [FILE_STATUS_TABLE + 4 * i + 1] = -1;
+    i = i + 1;
+endwhile;
+
+// Initialize buffer table
+i = 0;
+while (i < MAX_BUFFER) do
+    [BUFFER_TABLE + 4 * i] = -1;
+    [BUFFER_TABLE + 4 * i + 1] = 0;
+    [BUFFER_TABLE + 4 * i + 2] = -1;
     i = i + 1;
 endwhile;
 

@@ -11,4 +11,39 @@ processTable = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * PT_ENTRY_SIZE;
 // Set kernal stack to user area of process table
 SP = PAGE_SIZE * [processTable + 11] - 1;
 
+alias userSP R0;
+userSP = [processTable + 13];
+
+alias retAdr R1;
+retAdr = [PTBR + 2 * (userSP - 1) / PAGE_SIZE] * PAGE_SIZE + (userSP - 1) % PAGE_SIZE;
+
+// Check if logged in user is root user and if
+// current process is shell (init is shell in this stage)
+if ([SYSTEM_STATUS_TABLE] != ROOT || [SYSTEM_STATUS_TABLE + 1] != INIT_PROCESS) then
+    [retAdr] = -1;
+    [processTable + 9] = 0;
+    SP = userSP;
+    ireturn; 
+endif;
+
+// Commit changes made in memory copy of data structures
+
+R1 = DISK_STORE;
+R2 = [SYSTEM_STATUS_TABLE + 1];
+R3 = DISK_FREE_LIST / PAGE_SIZE;
+R4 = 2;
+call DEVICE_MANAGER;
+
+R1 = DISK_STORE;
+R2 = [SYSTEM_STATUS_TABLE + 1];
+R3 = INODE_TABLE / PAGE_SIZE;
+R4 = 3;
+call DEVICE_MANAGER;
+
+R1 = DISK_STORE;
+R2 = [SYSTEM_STATUS_TABLE + 1];
+R3 = ROOT_FILE / PAGE_SIZE;
+R4 = 5;
+call DEVICE_MANAGER;
+
 halt;

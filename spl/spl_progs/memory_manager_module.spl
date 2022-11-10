@@ -42,6 +42,12 @@ if (functionNum == RELEASE_PAGE) then
     return;
 endif;
 
+if(functionNum == RELEASE_BLOCK) then
+	alias blockNumber R2;
+	[DISK_FREE_LIST + blockNumber] = 0;
+	return;
+endif;
+
 if (functionNum == GET_CODE_PAGE) then
     alias codeBlock R2;
     alias pid R3;

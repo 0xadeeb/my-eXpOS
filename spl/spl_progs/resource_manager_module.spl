@@ -2,6 +2,53 @@
 alias functionNum R1;
 alias currentPID R2;
 
+if (functionNum == ACQUIRE_INODE) then
+    alias inodeIndex R3;
+
+	//busy loop while process is locked
+	while([FILE_STATUS_TABLE + 4 * inodeIndex] != -1)	do
+		[PROCESS_TABLE + 16 * currentPID + 4] = WAIT_FILE;
+		[PROCESS_TABLE + 16 * currentPID + 5] = inodeIndex;
+		multipush(R1, R2, R3);
+		call CONTEXT_SWITCH;
+		multipop(R1, R2, R3);
+	endwhile;
+
+    //if file deleted
+	if([INODE_TABLE + 16 * inodeIndex] == -1) then
+		R0 = -1;
+	else
+		[FILE_STATUS_TABLE + 4 * inodeIndex] = currentPID;
+		R0 = 0;
+	endif;
+	return;
+
+endif;
+
+if (functionNum == RELEASE_INODE) then
+    alias inodeIndex R3;
+
+    // If file is locked by someother process or not locked    
+	if([FILE_STATUS_TABLE + 4 * inodeIndex] != currentPID) then
+		R0 = -1;
+		return;
+	endif;
+
+	[FILE_STATUS_TABLE + 4 * inodeIndex] = -1;
+
+	alias pid R4;
+	pid = 1;
+	while(pid < MAX_PROC_NUM) do
+		if([PROCESS_TABLE + 16 * pid + 4] == WAIT_FILE && [PROCESS_TABLE + 16 * pid + 5] == inodeIndex) then
+			[PROCESS_TABLE + 16 * pid + 4] = READY;
+        endif;
+		pid = pid + 1;
+	endwhile;
+
+	R0 = 0;
+	return; 
+endif;
+
 if (functionNum == ACQUIRE_TERMINAL) then
     alias statusAddr R3;
     statusAddr = PROCESS_TABLE + 16 * currentPID + 4;

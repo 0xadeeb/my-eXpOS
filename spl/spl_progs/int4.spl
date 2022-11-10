@@ -1,0 +1,172 @@
+// Create and delete file sys calls
+alias processTable R9;
+processTable = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16;
+
+// Save user stack in process table
+[processTable + 13] = SP;
+
+// Set kernal stack to user area of process table
+SP = PAGE_SIZE * [processTable + 11] - 1;
+
+alias userSP R0;
+userSP = [processTable + 13];
+
+alias retAdr R1;
+retAdr = [PTBR + 2 * (userSP - 1) / PAGE_SIZE] * PAGE_SIZE + (userSP - 1) % PAGE_SIZE;
+
+alias sysno R2;
+sysno = [[PTBR + 2 * (userSP - 5) / PAGE_SIZE] * PAGE_SIZE + (userSP - 5) % PAGE_SIZE];
+
+// Set mode flag to system call no
+[processTable + 9] = sysno;
+
+if (sysno == INT_CREATE) then
+    alias fileName R2;
+    fileName = [[PTBR + 2 * (userSP - 4) / PAGE_SIZE] * PAGE_SIZE + (userSP - 4) % PAGE_SIZE];
+
+    alias idx R4;
+    idx = 1;
+    // Check if file with same name already exists
+    while (idx < MAX_FILE_NUM) do
+        if ([INODE_TABLE + 16 * idx + 1] == fileName) then
+            [retAdr] = 0;
+            goto exit;
+        endif;
+        idx = idx + 1;
+    endwhile;
+
+    // Find free slot
+    idx = 0;
+    while (idx < MAX_FILE_NUM) do
+        if ([INODE_TABLE + 16 * idx + 1] == -1) then
+            break;
+        endif;
+        idx = idx + 1;
+    endwhile;
+
+    if (idx == MAX_FILE_NUM) then
+        [retAdr] = -1;
+        goto exit;
+    endif;
+
+    alias permissions R3;
+    permissions = [[PTBR + 2 * (userSP - 3) / PAGE_SIZE] * PAGE_SIZE + (userSP - 3) % PAGE_SIZE];
+
+    alias inodeTableEntry R5;
+	inodeTableEntry = INODE_TABLE + 16 * idx;
+
+    alias rootFileEntry R6;
+	rootFileEntry = ROOT_FILE + 8 * idx;
+
+	[inodeTableEntry + 0] = DATA;
+	[inodeTableEntry + 1] = fileName;
+	[inodeTableEntry + 2] = 0;
+	[inodeTableEntry + 3] = [processTable + 3];
+	[inodeTableEntry + 4] = permissions;
+	//disk blocks
+	[inodeTableEntry + 8]  = -1;
+	[inodeTableEntry + 9]  = -1;
+	[inodeTableEntry + 10] = -1;
+	[inodeTableEntry + 11] = -1;
+
+	[rootFileEntry + 0] = fileName;
+	[rootFileEntry + 1] = 0;
+	[rootFileEntry + 2] = DATA;
+	[rootFileEntry + 3] = [USER_TABLE + 2 * [processTable + 3]];			//username
+	[rootFileEntry + 4] = permissions;
+    [retAdr] = 0;
+
+endif;
+
+if (sysno == INT_DELETE) then
+    breakpoint;
+    alias fileName R2;
+    fileName = [[PTBR + 2 * (userSP - 4) / PAGE_SIZE] * PAGE_SIZE + (userSP - 4) % PAGE_SIZE];
+
+    alias idx R3;
+    idx = 1;
+
+    // Check if data file with filename exists
+    while (idx < MAX_FILE_NUM) do
+        if ([INODE_TABLE + 16 * idx + 1] == fileName) then
+            if ([INODE_TABLE + 16 * idx] != DATA) then
+                [retAdr] = -1;
+                goto exit;
+            endif;
+            break;
+        endif;
+        idx = idx + 1;
+    endwhile;
+
+    if (idx == MAX_FILE_NUM) then
+        [retAdr] = 0;
+        goto exit;
+    endif;
+    
+    alias inodeTableEntry R4;
+    inodeTableEntry = INODE_TABLE + 16 * idx;
+
+    if ( [inodeTableEntry + 4] == EXCLUSIVE && [processTable + 3] != ROOT && [inodeTableEntry + 3] != [processTable + 3]) then
+        [retAdr] = -1;
+        goto exit;        
+    endif;
+
+    multipush(R9, R0, R1, R2, R3, R4);
+	R1 = ACQUIRE_INODE;
+	R2 = [SYSTEM_STATUS_TABLE + 1];
+	R3 = idx;
+	call RESOURCE_MANAGER;
+	multipop(R9, R0, R1, R2, R3, R4);
+
+    if ([FILE_STATUS_TABLE + 4 * idx + 1] != -1) then
+        multipush(R9, R0, R1, R2, R3, R4);
+        R1 = RELEASE_INODE;
+        R2 = [SYSTEM_STATUS_TABLE + 1];
+        R3 = idx;
+        call RESOURCE_MANAGER;
+        multipop(R9, R0, R1, R2, R3, R4);
+
+        [retAdr] = -2;
+        goto exit;
+    endif;
+
+    alias inodeBlockNum R5;
+    alias block R6;
+    inodeBlockNum = 0;
+
+    while (inodeBlockNum < MAX_FILE_BLOCKS) do
+        block = [inodeTableEntry + 8 + inodeBlockNum];
+        if ( block != -1) then
+            if ([BUFFER_TABLE + 4 * (block % MAX_BUFFER)] == block) then
+                [BUFFER_TABLE + 4 * (block % MAX_BUFFER) + 1] = 0;
+            endif;
+
+            multipush(R9, R0, R1, R2, R3, R4, R5, R6);
+			R1 = RELEASE_BLOCK;
+			R2 = block;
+			R3 = [SYSTEM_STATUS_TABLE + 1];
+			call MEMORY_MANAGER;
+			multipop(R9, R0, R1, R2, R3, R4, R5, R6);
+
+        endif;    
+        inodeBlockNum = inodeBlockNum + 1;
+    endwhile;
+    
+    [inodeTableEntry + 1] = -1;
+    [ROOT_FILE + 8 * idx] = -1;
+
+    multipush(R9, R0, R1, R2);
+    R1 = RELEASE_INODE;
+	R2 = [SYSTEM_STATUS_TABLE + 1];
+	R3 = idx;
+	call RESOURCE_MANAGER;
+    multipop(R9, R0, R1, R2);
+    
+    [retAdr] = 0;
+    breakpoint;
+endif;
+
+exit:
+[processTable + 9] = 0;
+SP = userSP;
+ireturn; 
