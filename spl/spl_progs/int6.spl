@@ -53,25 +53,22 @@ if ( arg1 != -1 ) then
 	alias lseek R6;
 	lseek = [openTableEntry + 2];
 
-	// If lseek same as the file size
-	if (lseek == [inodeEntry + 2]) then
-		multipush(R9, R0, R1);
-		R1 = RELEASE_INODE;
-		R2 = [SYSTEM_STATUS_TABLE + 1];
-		R3 = [openTableEntry];
-		call RESOURCE_MANAGER;
-		multipop(R9, R0, R1);
-		[retAdr] = -2;
-		goto exit;
-	endif;
-
 	alias wordAddress R7;
 	wordAddress =  [[PTBR + 2 * (userSP - 3) / PAGE_SIZE] * PAGE_SIZE + (userSP - 3) % PAGE_SIZE];  //virtual address
 	wordAddress = [PTBR + 2 * wordAddress / PAGE_SIZE] * PAGE_SIZE + (wordAddress % PAGE_SIZE);		//physical address
 
 	if ([openTableEntry] == INODE_ROOT) then
+		if (lseek == 8 * MAX_FILE_NUM) then
+			[retAdr] = -2;
+			goto release_and_return;
+		endif;
+
 		[wordAddress] = [ROOT_FILE + lseek];
 	else 
+		if (lseek == [inodeEntry + 2]) then
+			[retAdr] = -2;
+			goto release_and_return;
+		endif;
 		multipush(R9, R0, R1, R2, R3, R4, R5, R6, R7);
 		R4 = wordAddress;
 		R3 = lseek % XFS_BSIZE;
@@ -83,15 +80,15 @@ if ( arg1 != -1 ) then
 
 	[openTableEntry + 2] = [openTableEntry + 2] + 1;
 
-	multipush(R9, R0, R1);
+	[retAdr] = 0;
+	release_and_return:
+	multipush(R0, R9);
 	R1 = RELEASE_INODE;
 	R2 = [SYSTEM_STATUS_TABLE + 1];
 	R3 = [openTableEntry];
 	call RESOURCE_MANAGER;
-	multipop(R9, R0, R1);
+	multipop(R0, R9);
 
-	[retAdr] = 0;
-	goto exit;
 else
 	//Read from terminal
 	alias word R3;
@@ -103,7 +100,6 @@ else
 	call DEVICE_MANAGER;
 	multipop(R0, R1, R2, R3, R9);
 	[retAdr] = 0;
-	goto exit;
 endif;
 
 exit:
