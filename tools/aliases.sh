@@ -73,6 +73,16 @@ load() {
         done
         cd $osPath/xfs-interface
         ./xfs-interface run /tmp/loadCommand > /dev/null 2>&1
+    elif [[ $1 == "-d" ]]
+    then
+        : > /tmp/loadCommand
+        for fileName in "${@:2}"
+        do
+            echo "rm ${fileName}" >> /tmp/loadCommand
+            echo "load --data ${$(readlink -f $fileName)}" >> /tmp/loadCommand
+        done
+        cd $osPath/xfs-interface
+        ./xfs-interface run /tmp/loadCommand > /dev/null 2>&1
     else
         : > /tmp/loadCommand
         for filename in "$@"

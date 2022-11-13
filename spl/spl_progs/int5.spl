@@ -1,0 +1,88 @@
+// Open and close file sys calls
+alias processTable R9;
+processTable = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16;
+
+// Save user stack in process table
+[processTable + 13] = SP;
+
+// Set kernal stack to user area of process table
+SP = PAGE_SIZE * [processTable + 11] - 1;
+
+alias userSP R0;
+userSP = [processTable + 13];
+
+alias retAdr R1;
+retAdr = [PTBR + 2 * (userSP - 1) / PAGE_SIZE] * PAGE_SIZE + (userSP - 1) % PAGE_SIZE;
+
+alias sysno R2;
+sysno = [[PTBR + 2 * (userSP - 5) / PAGE_SIZE] * PAGE_SIZE + (userSP - 5) % PAGE_SIZE];
+
+// Set mode flag to system call no
+[processTable + 9] = sysno;
+
+if (sysno == INT_OPEN) then
+    alias entry_idx R2;
+    entry_idx = 0;
+    alias resTable R3;
+    resTable = [processTable + 11] * PAGE_SIZE + RESOURCE_TABLE_OFFSET;
+
+    while (entry_idx < 8) do
+        if ([resTable + 2 * entry_idx] == -1) then
+            break;
+        endif;
+        entry_idx = entry_idx + 1;
+    endwhile;
+
+    if (entry_idx == 8) then
+        [retAdr] = -3;
+        goto exit;
+    endif;
+
+    alias fileTableEntry R4;
+
+    multipush(R9, R0, R1, R2, R3);
+    R2 = [[PTBR + 2 * (userSP - 4) / PAGE_SIZE] * PAGE_SIZE + (userSP - 4) % PAGE_SIZE];
+    R1 = OPEN;
+    call FILE_MANAGER;
+    fileTableEntry = R0;
+    multipop(R9, R0, R1, R2, R3);
+
+    if (fileTableEntry < 0) then
+        [retAdr] = fileTableEntry;
+        goto exit;
+    endif;
+
+    [resTable + 2 * entry_idx] = FILE;
+    [resTable + 2 * entry_idx + 1] = fileTableEntry;
+    
+    [retAdr] = entry_idx;
+    
+endif;
+
+if (sysno == INT_CLOSE) then
+    alias entry_idx R2;
+    entry_idx = [[PTBR + 2 * (userSP - 4) / PAGE_SIZE] * PAGE_SIZE + (userSP - 4) % PAGE_SIZE];
+
+    alias resTable R3;
+    resTable = [processTable + 11] * PAGE_SIZE + RESOURCE_TABLE_OFFSET;
+
+    if (entry_idx < 0 || entry_idx > 7 || [resTable + 2 * entry_idx] != FILE) then
+        [retAdr] = -1;
+        goto exit;
+    endif;
+    
+    multipush(R9, R0, R1, R2, R3);
+    R2 = [resTable + 2 * entry_idx + 1];
+    R1 = CLOSE;
+    call FILE_MANAGER;
+    multipop(R9, R0, R1, R2, R3);
+
+    [resTable + 2 * entry_idx] = -1;
+    [retAdr] = 0;
+
+endif;
+
+exit:
+[processTable + 9] = 0;
+SP = userSP;
+ireturn; 

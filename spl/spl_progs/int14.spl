@@ -1,4 +1,4 @@
-//Semget and semrelease sys call
+//SemLock and semUnlock sys call
 alias processTable R9;
 processTable = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16;
 

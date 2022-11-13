@@ -105,6 +105,9 @@ else
         if ([i] == SEMAPHORE) then
             [SEMAPHORE_TABLE + 4 * [i + 1] + 1] = [SEMAPHORE_TABLE + 4 * [i + 1] + 1] + 1;
         endif;
+        if ([i] == FILE) then
+            [OPEN_FILE_TABLE + 4 * [i + 1] + 1] = [OPEN_FILE_TABLE + 4 * [i + 1] + 1] + 1;
+        endif;
         i = i + 2;
         j = j + 2;
     endwhile;

@@ -1,0 +1,157 @@
+// Mod 3
+alias functionNum R1;
+
+if (functionNum == OPEN) then
+    alias fileName R2;
+
+    alias idx R3;
+    idx = 0;
+
+    while (idx < MAX_FILE_NUM) do
+        if ([INODE_TABLE + 16 * idx + 1] == fileName) then
+            break;
+        endif;
+        idx = idx + 1;
+    endwhile;
+
+    if (idx == MAX_FILE_NUM) then
+        R0 = -1;
+        return;
+    endif;
+
+    multipush(R1, R2, R3);
+    R1 = ACQUIRE_INODE;
+    R2 = [SYSTEM_STATUS_TABLE + 1];
+    R3 = idx;
+    call RESOURCE_MANAGER;
+    multipop(R1, R2, R3);
+
+    // If file is deleted
+    if (R0 == -1) then
+        return;
+    endif;
+
+	//only data and root file can be read not exec
+	if([INODE_TABLE + 16 * idx] == EXEC) then
+		R0 = -1;
+		goto Return;
+	endif;
+
+    alias openTableIdx R4;
+    openTableIdx = 0;
+
+    while (openTableIdx < MAX_OPENFILE_NUM) do
+        if ([OPEN_FILE_TABLE + 4 * openTableIdx] == -1) then
+            break;
+        endif;
+        openTableIdx = openTableIdx + 1;
+    endwhile;
+
+    if (openTableIdx == MAX_OPENFILE_NUM) then
+        R0 = -2;
+        goto Return;
+    endif;
+
+    if (fileName == "root") then
+        [OPEN_FILE_TABLE + 4 * openTableIdx] = INODE_ROOT;
+    else 
+        if ([FILE_STATUS_TABLE + 4 * idx + 1] == -1) then
+            [FILE_STATUS_TABLE + 4 * idx + 1] = 1;
+        else
+            [FILE_STATUS_TABLE + 4 * idx + 1] = [FILE_STATUS_TABLE + 4 * idx + 1] + 1;
+        endif;
+        [OPEN_FILE_TABLE + 4 * openTableIdx] = idx;
+    endif;
+
+    [OPEN_FILE_TABLE + 4 * openTableIdx + 1] = 1; 
+    [OPEN_FILE_TABLE + 4 * openTableIdx + 2] = 0; 
+
+    R0 = openTableIdx;
+
+    Return:
+    multipush(R0);
+    R3 = idx;
+    R2 = [SYSTEM_STATUS_TABLE + 1];
+    R1 = RELEASE_INODE;
+    call RESOURCE_MANAGER;
+    multipop(R0);
+
+endif;
+
+if (functionNum == CLOSE) then
+    alias openTableIdx R2;
+    alias inodeIdx R3;
+
+    inodeIdx = [OPEN_FILE_TABLE + 4 * openTableIdx];
+
+    [OPEN_FILE_TABLE + 4 * openTableIdx] = [OPEN_FILE_TABLE + 4 * openTableIdx] - 1;
+
+    if ([OPEN_FILE_TABLE + 4 * openTableIdx] == 0) then
+        alias i R4;
+        i = 0;
+        while (i < 4) do
+            [OPEN_FILE_TABLE + 4 * openTableIdx + i] = -1;
+            i = i + 1;
+        endwhile;
+
+        if (inodeIdx != INODE_ROOT) then
+            [FILE_STATUS_TABLE + 4 * inodeIdx] = [FILE_STATUS_TABLE + 4 * inodeIdx] -1 ;
+            if ([FILE_STATUS_TABLE + 4 * inodeIdx] == 0) then
+                [FILE_STATUS_TABLE + 4 * inodeIdx] = -1;
+            endif;
+        endif;        
+
+    endif;
+endif;
+
+if (functionNum == BUFFERED_READ) then
+    alias blockNo R2;
+	alias offset R3;
+	alias writeAdr R4;
+
+    alias bufferIdx R5;
+    bufferIdx = blockNo % MAX_BUFFER;
+
+    multipush(R1, R2, R3, R4, R5);
+	R3 = bufferIdx;
+	R2 = [SYSTEM_STATUS_TABLE + 1];
+	R1 = ACQUIRE_BUFFER;
+	call RESOURCE_MANAGER;
+	multipop(R1, R2, R3, R4, R5);
+
+    if ([BUFFER_TABLE + 4 * bufferIdx] != blockNo) then
+        // If buffer cache is dirty write it to disk
+        if ([BUFFER_TABLE + 4 * bufferIdx + 1] == 1) then
+            multipush(R1, R2, R3, R4, R5);
+			R4 = [BUFFER_TABLE + 4 * bufferIdx]; // Disk block
+			R3 = BUFFER_BASE + bufferIdx; // Mem page
+            R2 = [SYSTEM_STATUS_TABLE + 1];
+            R1 = DISK_STORE;
+            multipop(R1, R2, R3, R4, R5);
+            [BUFFER_TABLE + 4 * bufferIdx + 1] = 0;
+        endif;        
+
+        // Load the block to buffer cache
+        multipush(R1, R2, R3, R4, R5);
+		R4 = blockNo;
+		R3 = BUFFER_BASE + bufferIdx;
+		R1 = DISK_LOAD;
+		R2 = [SYSTEM_STATUS_TABLE + 1];
+		call DEVICE_MANAGER;
+		multipop(R1, R2, R3, R4, R5);
+
+        [BUFFER_TABLE + 4 * bufferIdx] = blockNo;
+    endif;
+
+    [writeAdr] = [BUFFER + PAGE_SIZE * bufferIdx + offset];
+
+    multipush(R1, R2, R3, R4);
+	R3 = bufferIdx;
+	R2 = [SYSTEM_STATUS_TABLE + 1];
+	R1 = RELEASE_BUFFER;
+	call RESOURCE_MANAGER;
+	multipop(R1, R2, R3, R4);
+
+endif;
+
+return;
