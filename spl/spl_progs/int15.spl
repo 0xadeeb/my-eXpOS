@@ -26,8 +26,29 @@ if ([SYSTEM_STATUS_TABLE] != ROOT || [SYSTEM_STATUS_TABLE + 1] != INIT_PROCESS) 
     ireturn; 
 endif;
 
-// Commit changes made in memory copy of data structures
+// Kill all processes except idle and init
+R1 = KILL_ALL;
+R2 = [SYSTEM_STATUS_TABLE + 1];
+call PROCESS_MANAGER;
 
+alias idx R0;
+idx = 0;
+
+// Write back all dirty buffer cache pages
+while (idx < MAX_BUFFER) do
+    if ([BUFFER_TABLE + 4 * idx] != -1 && [BUFFER_TABLE + 4 * idx + 1] == 1) then
+        multipush(R0);
+        R1 = DISK_STORE;
+        R2 = [SYSTEM_STATUS_TABLE + 1];
+        R3 = BUFFER_BASE + idx;
+        R4 = [BUFFER_TABLE + 4 * idx];
+        call DEVICE_MANAGER;
+        multipop(R0);
+    endif;
+    idx = idx + 1;
+endwhile;
+
+// Commit changes made in memory copy of data structures
 R1 = DISK_STORE;
 R2 = [SYSTEM_STATUS_TABLE + 1];
 R3 = DISK_FREE_LIST / PAGE_SIZE;

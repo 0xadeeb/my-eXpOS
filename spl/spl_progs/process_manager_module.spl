@@ -129,3 +129,51 @@ if (functionNum == FREE_PAGE_TABLE) then
 
     return;
 endif;
+
+if (functionNum == KILL_ALL) then
+    alias idx R3;
+	idx = 0;
+    // Lock all files
+	while(idx < MAX_FILE_NUM) do
+		if([INODE_TABLE + 16 * idx + 1] != -1) then
+			multipush(R1, R2, R3);
+			R1 = ACQUIRE_INODE;
+			R2 = currentPID;
+			R3 = idx;
+			call RESOURCE_MANAGER;
+			multipop(R1, R2, R3);
+		endif;
+		idx = idx + 1;
+	endwhile;
+
+    alias pid R3;
+    pid = SHELL_PROCESS;
+    while (pid < MAX_PROC_NUM) do
+        if (pid != currentPID && [PROCESS_TABLE + PT_ENTRY_SIZE * pid + 4] != TERMINATED) then
+            multipush(R1, R2, R3);
+			R1 = EXIT_PROCESS;
+			R2 = pid;
+			call PROCESS_MANAGER;
+			multipop(R1, R2, R3);
+        endif;
+        pid = pid + 1;
+    endwhile;
+ 
+    alias idx R3;
+	idx = 0;
+    // Unlock all files
+	while(idx < MAX_FILE_NUM) do
+		if([INODE_TABLE + 16 * idx + 1] != -1) then
+			multipush(R1, R2, R3);
+			R1 = RELEASE_INODE;
+			R2 = currentPID;
+			R3 = idx;
+			call RESOURCE_MANAGER;
+			multipop(R1, R2, R3);
+		endif;
+		idx = idx + 1;
+	endwhile;
+ 
+endif;
+
+return;

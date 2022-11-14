@@ -159,8 +159,69 @@ if (functionNum == BUFFERED_READ) then
 	R2 = [SYSTEM_STATUS_TABLE + 1];
 	R1 = RELEASE_BUFFER;
 	call RESOURCE_MANAGER;
-	multipop(R1, R2, R3, R4);
+	multipop(R1);
+
+    return;
 
 endif;
+
+if (functionNum == BUFFERED_WRITE) then
+    alias blockNo R2;
+	alias offset R3;
+	alias word R4;
+
+    alias bufferIdx R5;
+    bufferIdx = blockNo % MAX_BUFFER;
+
+    multipush(R1, R2, R3, R4, R5);
+	R3 = bufferIdx;
+	R2 = [SYSTEM_STATUS_TABLE + 1];
+	R1 = ACQUIRE_BUFFER;
+	call RESOURCE_MANAGER;
+	multipop(R1, R2, R3, R4, R5);
+
+    alias bufferEntry R6;
+    bufferEntry = BUFFER_TABLE + 4 * bufferIdx;
+
+    if ([bufferEntry] != blockNo) then
+        // If buffer cache is dirty write it to disk
+        if ([bufferEntry + 1] == 1) then
+            multipush(R1, R2, R3, R4, R5, R6);
+			R4 = [bufferEntry]; // Disk block
+			R3 = BUFFER_BASE + bufferIdx; // Mem page
+            R2 = [SYSTEM_STATUS_TABLE + 1];
+            R1 = DISK_STORE;
+            call DEVICE_MANAGER;
+            multipop(R1, R2, R3, R4, R5, R6);
+
+            [bufferEntry + 1] = 0;
+        endif;        
+
+        // Load the block to buffer cache
+        multipush(R1, R2, R3, R4, R5, R6);
+		R4 = blockNo;
+		R3 = BUFFER_BASE + bufferIdx;
+		R2 = [SYSTEM_STATUS_TABLE + 1];
+		R1 = DISK_LOAD;
+		call DEVICE_MANAGER;
+		multipop(R1, R2, R3, R4, R5, R6);
+
+        [bufferEntry] = blockNo;
+    endif;
+
+    [BUFFER + PAGE_SIZE * bufferIdx + offset] = word;
+    [bufferEntry + 1] = 1;  //Set dirty bit after write
+
+    multipush(R1);
+	R3 = bufferIdx;
+	R2 = [SYSTEM_STATUS_TABLE + 1];
+	R1 = RELEASE_BUFFER;
+	call RESOURCE_MANAGER;
+	multipop(R1);
+    
+    return;
+    
+endif;
+
 
 return;

@@ -59,17 +59,26 @@ load() {
         spl *.spl
         cd $osPath/expl/expl_progs
         expl *.expl
+        cd $osPath/expl/shell_progs
+        : > /tmp/loadCommand
+        for fileName in *.expl
+        do
+            expl $fileName
+            echo "rm ${fileName%.expl}.xsm" >> /tmp/loadCommand
+            echo "load --exec ${$(readlink -f $fileName)%.expl}.xsm" >> /tmp/loadCommand
+        done
         cd $osPath/xfs-interface
+        ./xfs-interface run /tmp/loadCommand > /dev/null 2>&1
         ./xfs-interface run ../tools/load
     elif [[ $1 == "-e" ]]
     then
         cd $osPath/expl/expl_progs
         expl *.expl
         : > /tmp/loadCommand
-        for filename in *.expl
+        for fileName in *.expl
         do
-            echo "rm ${filename%.expl}.xsm" >> /tmp/loadCommand
-            echo "load --exec ${$(readlink -f $filename)%.expl}.xsm" >> /tmp/loadCommand
+            echo "rm ${fileName%.expl}.xsm" >> /tmp/loadCommand
+            echo "load --exec ${$(readlink -f $fileName)%.expl}.xsm" >> /tmp/loadCommand
         done
         cd $osPath/xfs-interface
         ./xfs-interface run /tmp/loadCommand > /dev/null 2>&1
@@ -85,11 +94,11 @@ load() {
         ./xfs-interface run /tmp/loadCommand > /dev/null 2>&1
     else
         : > /tmp/loadCommand
-        for filename in "$@"
+        for fileName in "$@"
         do
-            local filePath=$(readlink -f $filename)
+            local filePath=$(readlink -f $fileName)
             expl $filePath
-            echo "rm ${filename%.expl}.xsm" >> /tmp/loadCommand
+            echo "rm ${fileName%.expl}.xsm" >> /tmp/loadCommand
             echo "load --exec ${filePath%.expl}.xsm" >> /tmp/loadCommand
         done
         cd $osPath/xfs-interface

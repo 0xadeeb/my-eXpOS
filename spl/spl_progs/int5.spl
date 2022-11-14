@@ -1,4 +1,4 @@
-// Open and close file sys calls
+// Open, close, seek file sys calls
 alias processTable R9;
 processTable = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16;
 
@@ -79,6 +79,76 @@ if (sysno == INT_CLOSE) then
 
     [resTable + 2 * entry_idx] = -1;
     [retAdr] = 0;
+
+endif;
+
+if (sysno == INT_SEEK) then
+    alias entry_idx R2;
+    entry_idx = [[PTBR + 2 * (userSP - 4) / PAGE_SIZE] * PAGE_SIZE + (userSP - 4) % PAGE_SIZE];
+    alias resTable R3;
+    resTable = [processTable + 11] * PAGE_SIZE + RESOURCE_TABLE_OFFSET;
+
+    if (entry_idx < 0 || entry_idx > 7 || [resTable + 2 * entry_idx] != FILE) then
+        [retAdr] = -1;
+        goto exit;
+    endif;
+
+	alias openTableEntry R4;
+	openTableEntry = OPEN_FILE_TABLE + 4 * [resTable + 2 * entry_idx + 1];
+
+	alias inodeEntry R5;
+	inodeEntry = INODE_TABLE + 16 * [openTableEntry];
+
+	multipush(R9, R0, R1, R2, R3, R4, R5);
+	R3 = [openTableEntry];
+	R2 = [SYSTEM_STATUS_TABLE + 1];
+	R1 = ACQUIRE_INODE;
+	call RESOURCE_MANAGER;
+	R6 = R0;
+	multipop(R9, R0, R1, R2, R3, R4, R5);
+    
+	if (R6 == -1) then
+		[retAdr] = -1;
+		goto exit;
+	endif;
+
+	alias lseek R6;
+	lseek = [openTableEntry + 2];
+
+    alias offset R7;
+    offset = [[PTBR + 2 * (userSP - 3) / PAGE_SIZE] * PAGE_SIZE + (userSP - 3) % PAGE_SIZE];
+
+    if (lseek + offset < 0) then
+        [retAdr] = -2;
+        goto release_and_return;
+    endif;
+
+    alias fileSize R8;
+    if([openTableEntry] == INODE_ROOT) then
+		fileSize = 8 * MAX_FILE_NUM;
+	else
+		fileSize = [inodeEntry + 2];
+	endif;
+
+    if (offset == 0) then
+        lseek = 0;
+    else 
+        lseek = lseek + offset;
+        if (lseek > fileSize) then
+            lseek = fileSize;
+        endif;
+    endif;
+
+    [openTableEntry + 2] = lseek;
+    [retAdr] = 0;
+
+	release_and_return:
+	multipush(R0, R9);
+	R1 = RELEASE_INODE;
+	R2 = [SYSTEM_STATUS_TABLE + 1];
+	R3 = [openTableEntry];
+	call RESOURCE_MANAGER;
+	multipop(R0, R9);
 
 endif;
 
