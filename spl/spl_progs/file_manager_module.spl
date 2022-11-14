@@ -84,20 +84,25 @@ if (functionNum == CLOSE) then
 
     inodeIdx = [OPEN_FILE_TABLE + 4 * openTableIdx];
 
-    [OPEN_FILE_TABLE + 4 * openTableIdx] = [OPEN_FILE_TABLE + 4 * openTableIdx] - 1;
+    alias openTableEntry R4;
+    openTableEntry = OPEN_FILE_TABLE + 4 * openTableIdx;
+    [openTableEntry + 1] = [openTableEntry + 1] - 1;
 
-    if ([OPEN_FILE_TABLE + 4 * openTableIdx] == 0) then
-        alias i R4;
+    if ([openTableEntry + 1] == 0) then
+        alias i R5;
         i = 0;
         while (i < 4) do
-            [OPEN_FILE_TABLE + 4 * openTableIdx + i] = -1;
+            [openTableEntry + i] = -1;
             i = i + 1;
         endwhile;
 
+        alias fileTableEntry R4;
+        fileTableEntry = FILE_STATUS_TABLE + 4 * inodeIdx;
+
         if (inodeIdx != INODE_ROOT) then
-            [FILE_STATUS_TABLE + 4 * inodeIdx] = [FILE_STATUS_TABLE + 4 * inodeIdx] -1 ;
-            if ([FILE_STATUS_TABLE + 4 * inodeIdx] == 0) then
-                [FILE_STATUS_TABLE + 4 * inodeIdx] = -1;
+            [fileTableEntry + 1] = [fileTableEntry + 1] -1 ;
+            if ([fileTableEntry + 1] == 0) then
+                [fileTableEntry + 1] = -1;
             endif;
         endif;        
 
@@ -119,33 +124,37 @@ if (functionNum == BUFFERED_READ) then
 	call RESOURCE_MANAGER;
 	multipop(R1, R2, R3, R4, R5);
 
-    if ([BUFFER_TABLE + 4 * bufferIdx] != blockNo) then
+    alias bufferEntry R6;
+    bufferEntry = BUFFER_TABLE + 4 * bufferIdx;
+
+    if ([bufferEntry] != blockNo) then
         // If buffer cache is dirty write it to disk
-        if ([BUFFER_TABLE + 4 * bufferIdx + 1] == 1) then
-            multipush(R1, R2, R3, R4, R5);
-			R4 = [BUFFER_TABLE + 4 * bufferIdx]; // Disk block
+        if ([bufferEntry + 1] == 1) then
+            multipush(R1, R2, R3, R4, R5, R6);
+			R4 = [bufferEntry]; // Disk block
 			R3 = BUFFER_BASE + bufferIdx; // Mem page
             R2 = [SYSTEM_STATUS_TABLE + 1];
             R1 = DISK_STORE;
-            multipop(R1, R2, R3, R4, R5);
-            [BUFFER_TABLE + 4 * bufferIdx + 1] = 0;
+            call DEVICE_MANAGER;
+            multipop(R1, R2, R3, R4, R5, R6);
+            [bufferEntry + 1] = 0;
         endif;        
 
         // Load the block to buffer cache
-        multipush(R1, R2, R3, R4, R5);
+        multipush(R1, R2, R3, R4, R5, R6);
 		R4 = blockNo;
 		R3 = BUFFER_BASE + bufferIdx;
-		R1 = DISK_LOAD;
 		R2 = [SYSTEM_STATUS_TABLE + 1];
+		R1 = DISK_LOAD;
 		call DEVICE_MANAGER;
-		multipop(R1, R2, R3, R4, R5);
+		multipop(R1, R2, R3, R4, R5, R6);
 
-        [BUFFER_TABLE + 4 * bufferIdx] = blockNo;
+        [bufferEntry] = blockNo;
     endif;
 
     [writeAdr] = [BUFFER + PAGE_SIZE * bufferIdx + offset];
 
-    multipush(R1, R2, R3, R4);
+    multipush(R1);
 	R3 = bufferIdx;
 	R2 = [SYSTEM_STATUS_TABLE + 1];
 	R1 = RELEASE_BUFFER;
