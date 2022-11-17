@@ -23,7 +23,7 @@ if (functionNum == RELEASE_TERMINAL) then
     [TERMINAL_STATUS_TABLE] = 0;
     alias itr R3;
     itr = 0;
-    while (itr < 20) do
+    while (itr < MAX_PROC_NUM) do
         if ([PROCESS_TABLE + itr * 16 + 4] == WAIT_TERMINAL) then
             [PROCESS_TABLE + itr * 16 + 4] = READY;
         endif;

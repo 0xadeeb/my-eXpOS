@@ -22,14 +22,14 @@ arg1 =  [[PTBR + 2 * (userSP - 4) / PAGE_SIZE] * PAGE_SIZE + (userSP - 4) % PAGE
 
 if ( arg1 != -1 ) then
 	//Read from file
-    alias fd R2;
-    alias resTable R3;
-    resTable = [processTable + 11] * PAGE_SIZE + RESOURCE_TABLE_OFFSET;
+	alias fd R2;
+	alias resTable R3;
+	resTable = [processTable + 11] * PAGE_SIZE + RESOURCE_TABLE_OFFSET;
 
-    if (fd < 0 || fd > 7 || [resTable + 2 * fd] != FILE) then
-        [retAdr] = -1;
-        goto exit;
-    endif;
+	if (fd < 0 || fd > 7 || [resTable + 2 * fd] != FILE) then
+		[retAdr] = -1;
+		goto exit;
+	endif;
 
 	alias openTableEntry R4;
 	openTableEntry = OPEN_FILE_TABLE + 4 * [resTable + 2 * fd + 1];

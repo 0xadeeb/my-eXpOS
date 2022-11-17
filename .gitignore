@@ -8,7 +8,7 @@
 !*l
 *l/*
 !expl/shell_progs
-!expl/shell_progs/*
+!expl/shell_progs/*.expl
 !*l/*l_progs
 !*l/samples
 !*l/*l_progs/*.*l
