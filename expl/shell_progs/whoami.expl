@@ -1,0 +1,11 @@
+int main()
+{
+    decl
+        int uname;
+    enddecl
+    begin
+        uname = exposcall ("Getuname", -1);
+        write(uname);
+        return 0;
+    end
+}

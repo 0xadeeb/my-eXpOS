@@ -59,16 +59,19 @@ load() {
         spl *.spl
         cd $osPath/expl/expl_progs
         expl *.expl
-        cd $osPath/expl/shell_progs
-        : > /tmp/loadCommand
-        for fileName in *.expl
-        do
-            expl $fileName
-            echo "rm ${fileName%.expl}.xsm" >> /tmp/loadCommand
-            echo "load --exec ${$(readlink -f $fileName)%.expl}.xsm" >> /tmp/loadCommand
-        done
-        cd $osPath/xfs-interface
-        ./xfs-interface run /tmp/loadCommand > /dev/null 2>&1
+        if [[ -d $osPath/expl/shell_progs ]]
+        then
+            cd $osPath/expl/shell_progs
+            : > /tmp/loadCommand
+            for fileName in *.expl
+            do
+                expl $fileName
+                echo "rm ${fileName%.expl}.xsm" >> /tmp/loadCommand
+                echo "load --exec ${$(readlink -f $fileName)%.expl}.xsm" >> /tmp/loadCommand
+            done
+            cd $osPath/xfs-interface
+            ./xfs-interface run /tmp/loadCommand > /dev/null 2>&1
+        fi
         ./xfs-interface run ../tools/load
     elif [[ $1 == "-e" ]]
     then

@@ -1,0 +1,52 @@
+// Logout sys call
+alias processTable R9;
+processTable = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16;
+
+// Set mode flag to system call no
+[processTable + 9] = INT_LOGOUT;
+
+// Save user stack in process table
+[processTable + 13] = SP;
+
+// Set kernal stack to user area of process table
+SP = PAGE_SIZE * [processTable + 11] - 1;
+
+alias userSP R0;
+userSP = [processTable + 13];
+
+alias retAdr R1;
+retAdr = [PTBR + 2 * (userSP - 1) / PAGE_SIZE] * PAGE_SIZE + (userSP - 1) % PAGE_SIZE;
+
+if ([SYSTEM_STATUS_TABLE + 1] != SHELL_PROCESS) then
+    [retAdr] = -1;
+    SP = [processTable + 13];
+    [processTable + 9] = 0;
+    ireturn;
+endif;
+
+multipush(R9, R0, R1);
+R1 = KILL_ALL;
+R2 = SHELL_PROCESS;
+call PROCESS_MANAGER;
+multipop(R9, R0, R1);
+
+[PROCESS_TABLE + PT_ENTRY_SIZE * SHELL_PROCESS + 4] = TERMINATED;
+
+// Set IP on top of stack
+alias ip R2;
+alias shellStack R3;
+ip = [SHELL + 1];
+shellStack = [PAGE_TABLE_BASE + 20 * SHELL_PROCESS + 16];
+[shellStack * PAGE_SIZE] = ip;
+
+// Reset user SP of shell
+[PROCESS_TABLE + PT_ENTRY_SIZE * SHELL_PROCESS + 13] = 8 * PAGE_SIZE;
+
+// Wake up login process
+[PROCESS_TABLE + PT_ENTRY_SIZE * LOGIN_PROCESS + 4] = READY;
+
+[SYSTEM_STATUS_TABLE] = KERNEL;
+
+call CONTEXT_SWITCH;
+
+ireturn; // Not required

@@ -1,3 +1,4 @@
+// Mod 7
 //library
 loadi(63, 13);
 loadi(64, 14);
@@ -14,13 +15,13 @@ loadi(7, 20);
 loadi(8, 21);
 loadi(9, 22);
 
-//idle program
-loadi(69, 11);
-loadi(70, 12);
-
 //Init program
 loadi(65, 7);
-loadi(66, 8);
+// loadi(66, 8);
+
+//shell program
+loadi(67, 9);
+loadi(68, 10);
 
 //exception handler routine
 loadi(2, 15);
@@ -58,6 +59,10 @@ loadi(23, 36);
 loadi(24, 37);
 loadi(25, 38);
 
+//int 12
+loadi(26, 39);
+loadi(27, 40);
+
 //int 13
 loadi(28, 41);
 loadi(29, 42);
@@ -69,6 +74,14 @@ loadi(31, 44);
 //int 15
 loadi(32, 45);
 loadi(33, 46);
+
+//int 16
+loadi(34, 47);
+loadi(35, 48);
+
+//int 17
+loadi(36, 49);
+loadi(37, 50);
 
 //resource managment module (module 0)
 loadi(40, 53);
@@ -94,8 +107,9 @@ loadi(49, 62);
 loadi(50 ,63);
 loadi(51 ,64);
 
-//inode table
+//inode table and user table
 loadi(59, 3);
+loadi(60, 4);
 
 //disk free list
 loadi(61, 2);
@@ -103,90 +117,141 @@ loadi(61, 2);
 //root file
 loadi(62, 5);
 
+// Current user to kernel
+[SYSTEM_STATUS_TABLE] = KERNEL;
+
 [TERMINAL_STATUS_TABLE] = 0;
 [DISK_STATUS_TABLE] = 0;
 
-// Current user
-[SYSTEM_STATUS_TABLE] = ROOT;
-// Process table of init program
-[PROCESS_TABLE + 16] = 0;
-[PROCESS_TABLE + 17] = 1;
-[PROCESS_TABLE + 19] = ROOT;
-[PROCESS_TABLE + 20] = CREATED;
-[PROCESS_TABLE + 27] = 80;
-[PROCESS_TABLE + 28] = 0;
-[PROCESS_TABLE + 29] = 8 * PAGE_SIZE;
-[PROCESS_TABLE + 30] = PAGE_TABLE_BASE + 20;
-[PROCESS_TABLE + 31] = 10;
+// Init process
+alias processTable R0;
+alias pageTable R1;
+processTable = PROCESS_TABLE + 16 * INIT_PROCESS;
+pageTable = PAGE_TABLE_BASE + 20 * INIT_PROCESS;
+[processTable] = 0;
+[processTable + 1] = INIT_PROCESS;
+[processTable + 3] = KERNEL;
+[processTable + 4] = CREATED;
+[processTable + 11] = 77;
+[processTable + 12] = 0;
+[processTable + 13] = 8 * PAGE_SIZE;
+[processTable + 14] = pageTable;
+[processTable + 15] = 10;
 
-// Per process resource table of init
-alias pprm R0;
-pprm = 80 * PAGE_SIZE + RESOURCE_TABLE_OFFSET;
-alias idx R1;
-idx = 0;
-while (idx < 16) do
-    [pprm + idx] = -1;
-    idx = idx + 2;
-endwhile;
-
-//Init Program
 //Library
-[PAGE_TABLE_BASE + 20] = 63;
-[PAGE_TABLE_BASE + 21] = "0100";
-[PAGE_TABLE_BASE + 22] = 64;
-[PAGE_TABLE_BASE + 23] = "0100";
+[pageTable] = 63;
+[pageTable + 1] = "0100";
+[pageTable + 2] = 64;
+[pageTable + 3] = "0100";
 
 //Heap
-[PAGE_TABLE_BASE + 24] = 78;
-[PAGE_TABLE_BASE + 25] = "0110";
-[PAGE_TABLE_BASE + 26] = 79;
-[PAGE_TABLE_BASE + 27] = "0110";
+[pageTable + 4] = -1;
+[pageTable + 5] = "0000";
+[pageTable + 6] = -1;
+[pageTable + 7] = "0000";
 
 //Code
-[PAGE_TABLE_BASE + 28] = 65;
-[PAGE_TABLE_BASE + 29] = "0100";
-[PAGE_TABLE_BASE + 30] = 66;
-[PAGE_TABLE_BASE + 31] = "0100";
-[PAGE_TABLE_BASE + 32] = -1;
-[PAGE_TABLE_BASE + 33] = "0000";
-[PAGE_TABLE_BASE + 34] = -1;
-[PAGE_TABLE_BASE + 35] = "0000";
+[pageTable + 8] = 65;
+[pageTable + 9] = "0100";
+[pageTable + 10] = -1;
+[pageTable + 11] = "0000";
+[pageTable + 12] = -1;
+[pageTable + 13] = "0000";
+[pageTable + 14] = -1;
+[pageTable + 15] = "0000";
 
 //Stack
-[PAGE_TABLE_BASE + 36] = 76;
-[PAGE_TABLE_BASE + 37] = "0110";
-[PAGE_TABLE_BASE + 38] = 77;
-[PAGE_TABLE_BASE + 39] = "0110";
-
-//Disk map list of init
-[DISK_MAP_TABLE + 10] = -1;
-[DISK_MAP_TABLE + 11] = -1;
-[DISK_MAP_TABLE + 12] = -1;
-[DISK_MAP_TABLE + 13] = -1;
-[DISK_MAP_TABLE + 14] = 7;
-[DISK_MAP_TABLE + 15] = 8;
-[DISK_MAP_TABLE + 16] = -1;
-[DISK_MAP_TABLE + 17] = -1;
-[DISK_MAP_TABLE + 18] = -1;
-[DISK_MAP_TABLE + 19] = -1;
+[pageTable + 16] = 66;
+[pageTable + 17] = "0110";
+[pageTable + 18] = -1;
+[pageTable + 19] = "0000";
 
 // Set IP in top of the stack
-[76 * 512] = [65 * 512 + 1];
+[66 * PAGE_SIZE] = [65 * PAGE_SIZE + 1];
+
+// Shell
+processTable = PROCESS_TABLE + 16 * SHELL_PROCESS;
+pageTable = PAGE_TABLE_BASE + 20 * SHELL_PROCESS;
+[processTable] = 0;
+[processTable + 1] = SHELL_PROCESS;
+[processTable + 3] = ROOT;
+[processTable + 4] = TERMINATED;
+[processTable + 11] = 80;
+[processTable + 12] = 0;
+[processTable + 13] = 8 * PAGE_SIZE;
+[processTable + 14] = pageTable;
+[processTable + 15] = 10;
+
+//Library
+[pageTable] = 63;
+[pageTable + 1] = "0100";
+[pageTable + 2] = 64;
+[pageTable + 3] = "0100";
+
+//Heap
+[pageTable + 4] = -1;
+[pageTable + 5] = "0000";
+[pageTable + 6] = -1;
+[pageTable + 7] = "0000";
+
+//Code
+[pageTable + 8] = 67;
+[pageTable + 9] = "0100";
+[pageTable + 10] = 68;
+[pageTable + 11] = "0110";
+[pageTable + 12] = -1;
+[pageTable + 13] = "0000";
+[pageTable + 14] = -1;
+[pageTable + 15] = "0000";
+
+//Stack
+[pageTable + 16] = 78;
+[pageTable + 17] = "0110";
+[pageTable + 18] = 79;
+[pageTable + 19] = "0110";
+
+// Set IP in top of the stack
+[78 * PAGE_SIZE] = [67 * PAGE_SIZE + 1];
+
+// Initialize per process resource table and disk map table of init and shell
+alias pprm R0;
+alias proc R1;
+alias idx R2;
+proc = INIT_PROCESS;
+while (proc <= SHELL_PROCESS) do
+    pprm = [PROCESS_TABLE + PT_ENTRY_SIZE * proc + 11] * PAGE_SIZE + RESOURCE_TABLE_OFFSET;
+    idx = 0;
+    while (idx < 16) do
+        [pprm + idx] = -1;
+        inline "ADD R2, 2";
+    endwhile;
+    idx = 0;
+    while (idx < 10) do
+        [DISK_MAP_TABLE + 10 * proc + idx] = -1;
+        inline "ADD R2, 1";
+    endwhile;
+    inline "ADD R1, 1";
+endwhile;
+
+//Disk map list of init and shell
+[DISK_MAP_TABLE + 14] = 7;
+[DISK_MAP_TABLE + 24] = 9;
+[DISK_MAP_TABLE + 25] = 10;
 
 alias i R0;
-i = 2;
+i = 3;
 while (i < MAX_PROC_NUM) do
     [PROCESS_TABLE + i * 16] = -1;
     [PROCESS_TABLE + i * 16 + 4] = TERMINATED;
-    i = i + 1;
+    inline "ADD R0, 1";
 endwhile;
 
 // initialize MEMORY_FREE_LIST
 i = 0;
-// For init and idle programs
-while (i < 83) do
+// For init, idle and shell programs
+while (i <= 80) do
     [MEMORY_FREE_LIST + i] = 1;
-    i = i + 1;
+    inline "ADD R0, 1";
 endwhile;
 // For all the others
 
@@ -194,18 +259,18 @@ endwhile;
 //while (i < MAX_MEM_PAGE) do
 while (i < 128) do
     [MEMORY_FREE_LIST + i] = 0;
-    i = i + 1;
+    inline "ADD R0, 1";
 endwhile;
+// [SYSTEM_STATUS_TABLE + 2] = MAX_MEM_PAGE - 81;
+[SYSTEM_STATUS_TABLE + 2] = 128 - 81;
 [SYSTEM_STATUS_TABLE + 3] = 0;
-// [SYSTEM_STATUS_TABLE + 2] = MAX_MEM_PAGE - 83;
-[SYSTEM_STATUS_TABLE + 2] = 128 - 83;
 
 // Initialize semaphore table
 i = 0;
 while (i < MAX_SEM_COUNT) do
     [SEMAPHORE_TABLE + 4 * i] = -1;
     [SEMAPHORE_TABLE + 4 * i + 1] = 0;
-    i = i + 1;
+    inline "ADD R0, 1";
 endwhile;
 
 // Initialize file status table
@@ -213,7 +278,7 @@ i = 0;
 while (i < MAX_FILE_NUM) do
     [FILE_STATUS_TABLE + 4 * i] = -1;
     [FILE_STATUS_TABLE + 4 * i + 1] = -1;
-    i = i + 1;
+    inline "ADD R0, 1";
 endwhile;
 
 // Initialize buffer table
@@ -222,7 +287,7 @@ while (i < MAX_BUFFER) do
     [BUFFER_TABLE + 4 * i] = -1;
     [BUFFER_TABLE + 4 * i + 1] = 0;
     [BUFFER_TABLE + 4 * i + 2] = -1;
-    i = i + 1;
+    inline "ADD R0, 1";
 endwhile;
 
 // Initialize open file table
@@ -230,7 +295,7 @@ i = 0;
 while (i < MAX_OPENFILE_NUM) do
     [OPEN_FILE_TABLE + 4 * i] = -1;
     [OPEN_FILE_TABLE + 4 * i + 1] = 0;
-    i = i + 1;
+    inline "ADD R0, 1";
 endwhile;
 
 return;

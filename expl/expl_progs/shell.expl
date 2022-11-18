@@ -1,0 +1,72 @@
+int main()
+{
+decl
+    int temp, pid, flag, retcom;
+    string input, username, password;
+enddecl
+
+begin
+    while(1 == 1) do
+        write("$");
+        read(input);
+
+        if(input == "exit" OR input == "Shutdown") then
+            temp = exposcall ("Shutdown");
+        endif;
+
+        flag=0;
+        if(input == "Logout") then
+            flag=1;
+        endif;
+
+        if(input == "Remusr" OR input == "Getuid") then
+            flag=1;
+            write("UserName:");
+            read(username);
+        endif;
+        
+        if(input == "Getuname") then
+            flag=1;
+            write("UserId:");
+            read(username);
+        endif;
+
+        if(input == "Newusr" OR input == "Setpwd") then
+            flag=1;
+            write("UserName:");
+            read(username);
+            write("Password:");
+            read(password);
+        endif;
+
+        if(flag==1) then
+            retcom = exposcall(input, username, password);
+            if(retcom < 0) then
+                write("BAD COMMAND");
+            else
+                if(input == "Getuid" OR input == "Getuname") then
+                    write(retcom);
+                endif;
+            endif;
+        else
+            pid = exposcall("Fork");
+            if(pid < 0) then
+                write("Fork Fail");
+                continue;
+            endif;
+
+            if(pid != 0) then
+                temp = exposcall("Wait",pid);
+            else
+                temp = exposcall("Exec",input);
+                if(temp != 0) then
+                    write("BAD COMMAND");
+                    break;
+                endif;
+            endif;
+        endif;
+    endwhile;
+
+    return 0;
+end
+}

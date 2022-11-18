@@ -2,56 +2,61 @@
 loadi(54, 67);
 loadi(55, 68);
 
-call BOOT_MODULE;
+// load idle
+loadi(69,11);
 
-PTBR = PAGE_TABLE_BASE;
-PTLR = 10;
+SP = 76 * PAGE_SIZE - 1;
+
+call BOOT_MODULE;
 
 // Process table of idle program
 [PROCESS_TABLE + 0] = 0;
-[PROCESS_TABLE + 1] = 0;
+[PROCESS_TABLE + 1] = IDLE_PROCESS;
+[PROCESS_TABLE + 3] = KERNEL;
 [PROCESS_TABLE + 4] = RUNNING;
-[PROCESS_TABLE + 11] = 82;
+[PROCESS_TABLE + 11] = 76;
 [PROCESS_TABLE + 12] = 0;
-[PROCESS_TABLE + 13] = 8 * 512;
-[PROCESS_TABLE + 14] = PTBR;
+[PROCESS_TABLE + 13] = 8 * PAGE_SIZE;
+[PROCESS_TABLE + 14] = PAGE_TABLE_BASE;
 [PROCESS_TABLE + 15] = 10;
 
 // Idle
 //Library
-[PTBR + 0] = 63;
-[PTBR + 1] = "0100";
-[PTBR + 2] = 64;
-[PTBR + 3] = "0100";
+[PAGE_TABLE_BASE + 0] = -1;
+[PAGE_TABLE_BASE + 1] = "0000";
+[PAGE_TABLE_BASE + 2] = -1;
+[PAGE_TABLE_BASE + 3] = "0000";
 
 //Heap
-[PTBR + 4] = -1;
-[PTBR + 5] = "0000";
-[PTBR + 6] = -1;
-[PTBR + 7] = "0000";
+[PAGE_TABLE_BASE + 4] = -1;
+[PAGE_TABLE_BASE + 5] = "0000";
+[PAGE_TABLE_BASE + 6] = -1;
+[PAGE_TABLE_BASE + 7] = "0000";
 
 //Code
-[PTBR + 8] = 69;
-[PTBR + 9] = "0100";
-[PTBR + 10] = 70;
-[PTBR + 11] = "0100";
-[PTBR + 12] = -1;
-[PTBR + 13] = "0000";
-[PTBR + 14] = -1;
-[PTBR + 15] = "0000";
+[PAGE_TABLE_BASE + 8] = 69;
+[PAGE_TABLE_BASE + 9] = "0100";
+[PAGE_TABLE_BASE + 10] = -1;
+[PAGE_TABLE_BASE + 11] = "0000";
+[PAGE_TABLE_BASE + 12] = -1;
+[PAGE_TABLE_BASE + 13] = "0000";
+[PAGE_TABLE_BASE + 14] = -1;
+[PAGE_TABLE_BASE + 15] = "0000";
 
 //Stack
-[PTBR + 16] = 81;
-[PTBR + 17] = "0110";
-[PTBR + 18] = -1;
-[PTBR + 19] = "0000";
+[PAGE_TABLE_BASE + 16] = 70;
+[PAGE_TABLE_BASE + 17] = "0110";
+[PAGE_TABLE_BASE + 18] = -1;
+[PAGE_TABLE_BASE + 19] = "0000";
 
 //IP in top of the stack
-[81 * 512] = [69 * 512 + 1];
+[70 * PAGE_SIZE] = [69 * PAGE_SIZE + 1];
 
 // Idle program PID
-[SYSTEM_STATUS_TABLE + 1] = 0;
+[SYSTEM_STATUS_TABLE + 1] = IDLE_PROCESS;
 
-SP = 8 * 512;
+SP = 8 * PAGE_SIZE;
+PTBR = PAGE_TABLE_BASE;
+PTLR = 10;
 
 ireturn;

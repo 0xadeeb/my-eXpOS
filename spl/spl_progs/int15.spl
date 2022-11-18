@@ -17,9 +17,8 @@ userSP = [processTable + 13];
 alias retAdr R1;
 retAdr = [PTBR + 2 * (userSP - 1) / PAGE_SIZE] * PAGE_SIZE + (userSP - 1) % PAGE_SIZE;
 
-// Check if logged in user is root user and if
-// current process is shell (init is shell in this stage)
-if ([SYSTEM_STATUS_TABLE] != ROOT || [SYSTEM_STATUS_TABLE + 1] != INIT_PROCESS) then
+// Check if logged in user is root or kernel and if current process is init or shell
+if ([SYSTEM_STATUS_TABLE] > ROOT  || [SYSTEM_STATUS_TABLE + 1] > SHELL_PROCESS) then
     [retAdr] = -1;
     [processTable + 9] = 0;
     SP = userSP;
@@ -59,6 +58,12 @@ R1 = DISK_STORE;
 R2 = [SYSTEM_STATUS_TABLE + 1];
 R3 = INODE_TABLE / PAGE_SIZE;
 R4 = 3;
+call DEVICE_MANAGER;
+
+R1 = DISK_STORE;
+R2 = [SYSTEM_STATUS_TABLE + 1];
+R3 = USER_TABLE / PAGE_SIZE;
+R4 = 4;
 call DEVICE_MANAGER;
 
 R1 = DISK_STORE;

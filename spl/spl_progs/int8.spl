@@ -133,17 +133,20 @@ else
 
     // copy stack pages
     alias page R8;
-    page = 16;
-    while (page <= 18) do
-        i = [childPageTable + page] * PAGE_SIZE;
-        l = i + PAGE_SIZE;
-        j = [PTBR + page] * PAGE_SIZE;
-        while (i < l) do
-            [i] = [j];
-            i = i + 1;
-            j = j + 1;
-        endwhile;
-        page = page + 2;
+    page = 8;
+    while (page < 10) do
+        // Check if the parents stack is valid (not necessary for the current design of expos)
+        if ([PTBR + 2 * page] != -1) then
+            i = [childPageTable + 2 * page] * PAGE_SIZE;
+            l = i + PAGE_SIZE;
+            j = [PTBR + 2 * page] * PAGE_SIZE;
+            while (i < l) do
+                [i] = [j];
+                i = i + 1;
+                j = j + 1;
+            endwhile;
+        endif;
+        page = page + 1;
     endwhile;
 
     // push BP

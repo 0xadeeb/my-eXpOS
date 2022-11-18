@@ -1,0 +1,203 @@
+// Multiuser sys calls
+alias processTable R9;
+processTable = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16;
+
+// Save user stack in process table
+[processTable + 13] = SP;
+
+// Set kernal stack to user area of process table
+SP = PAGE_SIZE * [processTable + 11] - 1;
+
+alias userSP R0;
+userSP = [processTable + 13];
+
+alias retAdr R1;
+retAdr = [PTBR + 2 * (userSP - 1) / PAGE_SIZE] * PAGE_SIZE + (userSP - 1) % PAGE_SIZE;
+
+alias sysno R2;
+sysno = [[PTBR + 2 * (userSP - 5) / PAGE_SIZE] * PAGE_SIZE + (userSP - 5) % PAGE_SIZE];
+
+// Set mode flag to system call no
+[processTable + 9] = sysno;
+
+if (sysno == INT_NEWUSR) then
+    // If current user not root or running process not shell
+    if ([SYSTEM_STATUS_TABLE] != ROOT || [SYSTEM_STATUS_TABLE + 1] != SHELL_PROCESS) then
+        [retAdr] = -2;
+        goto exit;
+    endif;
+    
+    alias username R3;
+    alias password R4;
+
+    username = [[PTBR + 2 * (userSP - 4) / PAGE_SIZE] * PAGE_SIZE + (userSP - 4) % PAGE_SIZE];
+    password = [[PTBR + 2 * (userSP - 3) / PAGE_SIZE] * PAGE_SIZE + (userSP - 3) % PAGE_SIZE];
+
+    alias userid R5;
+    userid = 2;
+
+    // Check if user exists
+    while (userid < MAX_USER_NUM) do
+        if ([USER_TABLE + 2 * userid] == username) then
+            [retAdr] = -1;
+            goto exit;
+        endif;
+        userid = userid + 1;
+    endwhile;
+
+    // Find free slot
+    userid = 2;
+    while (userid < MAX_USER_NUM) do
+        if ([USER_TABLE + 2 * userid] == -1) then
+            break;
+        endif;
+        userid = userid + 1;
+    endwhile;
+
+    if (userid == MAX_USER_NUM) then
+        [retAdr] = -3;
+        goto exit;
+    endif;
+
+    encrypt password;
+
+    [USER_TABLE + 2 * userid] = username;
+    [USER_TABLE + 2 * userid + 1] = password;
+
+    [retAdr] = 0;
+    goto exit;
+
+endif;
+
+if (sysno == INT_REMUSR) then
+    // If current user not root or running process not shell
+    if ([SYSTEM_STATUS_TABLE] != ROOT || [SYSTEM_STATUS_TABLE + 1] != SHELL_PROCESS) then
+        [retAdr] = -2;
+        goto exit;
+    endif;
+
+    alias username R3;
+    username = [[PTBR + 2 * (userSP - 4) / PAGE_SIZE] * PAGE_SIZE + (userSP - 4) % PAGE_SIZE];
+
+    if (username == "kernel" || username == "root") then
+        [retAdr] = -2;
+        goto exit;
+    endif;
+
+    alias userid R4;
+    userid = 2;
+
+    while (userid < MAX_USER_NUM) do
+        if ([USER_TABLE + 2 * userid] == username) then
+            break;
+        endif;
+        userid = userid + 1;
+    endwhile;
+
+    if (userid == MAX_USER_NUM) then
+        [retAdr] = -1;
+        goto exit;
+    endif;
+
+    alias file R5;
+    file = 1;
+    // Check if the user owns files
+    while (file < MAX_FILE_NUM) do
+        if ([ROOT_FILE + 8 * file] != -1 && [ROOT_FILE + 8 * file + 3] == username) then
+            [retAdr] = -3;
+            goto exit;            
+        endif;
+        file = file + 1;
+    endwhile;
+    
+    [USER_TABLE + 2 * userid] = -1;
+    [USER_TABLE + 2 * userid + 1] = -1;
+
+    [retAdr] = 0;
+    goto exit;
+    
+endif;
+
+if (sysno == INT_SETPWD) then
+    if ([SYSTEM_STATUS_TABLE + 1] != SHELL_PROCESS) then
+        [retAdr] = -1;
+        goto exit;
+    endif;
+
+    alias username R3;
+    alias password R4;
+
+    username = [[PTBR + 2 * (userSP - 4) / PAGE_SIZE] * PAGE_SIZE + (userSP - 4) % PAGE_SIZE];
+    password = [[PTBR + 2 * (userSP - 3) / PAGE_SIZE] * PAGE_SIZE + (userSP - 3) % PAGE_SIZE];
+
+    alias userid R5;
+    userid = 1;
+
+    while (userid < MAX_USER_NUM) do
+        if ([USER_TABLE + 2 * userid] == username) then
+            break;
+        endif;
+        userid = userid + 1;
+    endwhile;
+
+    if (userid == MAX_USER_NUM) then
+        [retAdr] = -2;
+        goto exit;
+    endif;
+
+    if (userid != [SYSTEM_STATUS_TABLE] || userid != ROOT) then
+        [retAdr] = -1;
+        goto exit;
+    endif;
+
+    encrypt password;
+    [USER_TABLE + 2 * userid + 1] = password;
+
+    [retAdr] = 0;
+    goto exit;
+
+endif;
+
+if (sysno == INT_GETUID) then
+    alias username R3;
+    username = [[PTBR + 2 * (userSP - 4) / PAGE_SIZE] * PAGE_SIZE + (userSP - 4) % PAGE_SIZE];
+
+    alias userid R4;
+    userid = 0;
+
+    while (userid < MAX_USER_NUM) do
+        if ([USER_TABLE + 2 * userid] == username) then
+            [retAdr] = userid;
+            goto exit;
+        endif;
+        userid = userid + 1;
+    endwhile;
+
+    [retAdr] = -1;
+    goto exit;
+    
+endif;
+
+if (sysno == INT_GETUNAME) then
+    alias userid R3;
+    userid = [[PTBR + 2 * (userSP - 4) / PAGE_SIZE] * PAGE_SIZE + (userSP - 4) % PAGE_SIZE];
+
+    // send -1 as argument to get currently logged in user's uname (not given in roadmap)
+    if (userid == -1) then
+        userid = [SYSTEM_STATUS_TABLE];
+    endif;
+
+    if (userid < 0 || userid > 15 || [USER_TABLE + 2 * userid] == -1) then
+        [retAdr] = -1;
+        goto exit;
+    endif;
+
+    [retAdr] = [USER_TABLE + 2 * userid];
+    goto exit;
+    
+endif;
+
+exit:
+[processTable + 9] = 0;
+SP = userSP;
+ireturn; 
