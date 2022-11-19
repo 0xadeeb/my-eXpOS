@@ -25,6 +25,6 @@ load --module 4 ../spl/spl_progs/device_manager_module.xsm
 load --module 5 ../spl/spl_progs/context_switch_module.xsm
 load --module 7 ../spl/spl_progs/boot_module.xsm
 load --library ../expl/library.lib
-load --idle ../expl/expl_progs/idle.xsm
-load --init ../expl/expl_progs/login.xsm
-load --shell ../expl/expl_progs/shell.xsm
+load --idle ../expl/kernel_progs/idle.xsm
+load --init ../expl/kernel_progs/login.xsm
+load --shell ../expl/kernel_progs/shell.xsm

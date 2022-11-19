@@ -5,14 +5,14 @@ alias currentPID R2;
 if (functionNum == GET_PCB_ENTRY) then
     alias pid R0;
     alias processTable R3;
-    pid = 1;
+    pid = SHELL_PROCESS + 1;
     processTable = PROCESS_TABLE + PT_ENTRY_SIZE * pid;
     while (pid < MAX_PROC_NUM) do
         if ([processTable + 4] == TERMINATED) then
             [processTable + 4] = ALLOCATED;
             [processTable + 1] = pid;
             [processTable + 14] = PAGE_TABLE_BASE + 20 * pid;
-            [processTable + 15] = 10;
+            [processTable + 15] = MAX_PROC_PAGES;
             return;
         endif;
         pid = pid + 1;
@@ -112,8 +112,8 @@ if (functionNum == FREE_PAGE_TABLE) then
     // Release stack, heap disk blocks
     alias dmt R5;
     i = 2;
-    while (i < 10) do
-        dmt = DISK_MAP_TABLE + 10 * currentPID + i;
+    while (i < MAX_PROC_PAGES) do
+        dmt = DISK_MAP_TABLE + MAX_PROC_PAGES * currentPID + i;
         if ((i < 4) || (i > 7)) then
             if ([dmt] != -1) then
                 multipush(R1, R2, R3, R4, R5);

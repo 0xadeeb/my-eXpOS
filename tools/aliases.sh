@@ -57,55 +57,79 @@ load() {
     then
         cd $osPath/spl/spl_progs
         spl *.spl
-        cd $osPath/expl/expl_progs
+
+        if [[ -d $osPath/expl/kernel_progs ]]
+        then
+            cd $osPath/expl/kernel_progs    # need to have kernel_progs dir in expl which contains all kernel processes like init, idle etc
+        else
+            cd $osPath/expl/expl_progs
+        fi
         expl *.expl
+
         if [[ -d $osPath/expl/shell_progs ]]
         then
             cd $osPath/expl/shell_progs
+            expl *.expl
+
             : > /tmp/loadCommand
             for fileName in *.expl
             do
-                expl $fileName
+                local filePath=$(readlink -f $fileName)
                 echo "rm ${fileName%.expl}.xsm" >> /tmp/loadCommand
-                echo "load --exec ${$(readlink -f $fileName)%.expl}.xsm" >> /tmp/loadCommand
+                echo "load --exec ${filePath%.expl}.xsm" >> /tmp/loadCommand
             done
+
             cd $osPath/xfs-interface
             ./xfs-interface run /tmp/loadCommand > /dev/null 2>&1
         fi
+
+        cd $osPath/xfs-interface
         ./xfs-interface run ../tools/load
+
     elif [[ $1 == "-e" ]]
     then
-        cd $osPath/expl/expl_progs
-        expl *.expl
         : > /tmp/loadCommand
-        for fileName in *.expl
+        for fileName in "${@:2}"
         do
+            local filePath=$(readlink -f $fileName)
+            expl $fileName
             echo "rm ${fileName%.expl}.xsm" >> /tmp/loadCommand
-            echo "load --exec ${$(readlink -f $fileName)%.expl}.xsm" >> /tmp/loadCommand
+            echo "load --exec ${filePath%.expl}.xsm" >> /tmp/loadCommand
         done
+
         cd $osPath/xfs-interface
         ./xfs-interface run /tmp/loadCommand > /dev/null 2>&1
+
     elif [[ $1 == "-d" ]]
     then
         : > /tmp/loadCommand
         for fileName in "${@:2}"
         do
             echo "rm ${fileName}" >> /tmp/loadCommand
-            echo "load --data ${$(readlink -f $fileName)}" >> /tmp/loadCommand
+            echo "load --data $(readlink -f $fileName)" >> /tmp/loadCommand
         done
+
         cd $osPath/xfs-interface
         ./xfs-interface run /tmp/loadCommand > /dev/null 2>&1
-    else
+
+    elif [[ $1 == "-a" ]]
+    then
+        cd $osPath/expl/expl_progs
+        expl *.expl
+
         : > /tmp/loadCommand
-        for fileName in "$@"
+        for fileName in *.expl
         do
             local filePath=$(readlink -f $fileName)
-            expl $filePath
             echo "rm ${fileName%.expl}.xsm" >> /tmp/loadCommand
             echo "load --exec ${filePath%.expl}.xsm" >> /tmp/loadCommand
         done
+
         cd $osPath/xfs-interface
         ./xfs-interface run /tmp/loadCommand > /dev/null 2>&1
+
+    else
+        echo "Not completed"
     fi
     cd $currentDir
 }

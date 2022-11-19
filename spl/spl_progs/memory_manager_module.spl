@@ -15,7 +15,7 @@ if (functionNum == GET_FREE_PAGE) then
 
     alias page R0;
     page = 76;
-    while (page < 128) do
+    while (page < NUM_MEM_PAGES) do
         if ([MEMORY_FREE_LIST + page] == 0) then
             [MEMORY_FREE_LIST + page] = 1;
             break;

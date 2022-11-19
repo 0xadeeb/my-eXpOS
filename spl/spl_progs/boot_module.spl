@@ -136,7 +136,7 @@ pageTable = PAGE_TABLE_BASE + 20 * INIT_PROCESS;
 [processTable + 12] = 0;
 [processTable + 13] = 8 * PAGE_SIZE;
 [processTable + 14] = pageTable;
-[processTable + 15] = 10;
+[processTable + 15] = MAX_PROC_PAGES;
 
 //Library
 [pageTable] = 63;
@@ -180,7 +180,7 @@ pageTable = PAGE_TABLE_BASE + 20 * SHELL_PROCESS;
 [processTable + 12] = 0;
 [processTable + 13] = 8 * PAGE_SIZE;
 [processTable + 14] = pageTable;
-[processTable + 15] = 10;
+[processTable + 15] = MAX_PROC_PAGES;
 
 //Library
 [pageTable] = 63;
@@ -226,8 +226,8 @@ while (proc <= SHELL_PROCESS) do
         inline "ADD R2, 2";
     endwhile;
     idx = 0;
-    while (idx < 10) do
-        [DISK_MAP_TABLE + 10 * proc + idx] = -1;
+    while (idx < MAX_PROC_PAGES) do
+        [DISK_MAP_TABLE + MAX_PROC_PAGES * proc + idx] = -1;
         inline "ADD R2, 1";
     endwhile;
     inline "ADD R1, 1";
@@ -253,16 +253,13 @@ while (i <= 80) do
     [MEMORY_FREE_LIST + i] = 1;
     inline "ADD R0, 1";
 endwhile;
-// For all the others
 
-// MAX_MEM_PAGE set to be 512 not 128 spl error
-//while (i < MAX_MEM_PAGE) do
-while (i < 128) do
+// For all the others
+while (i < NUM_MEM_PAGES) do
     [MEMORY_FREE_LIST + i] = 0;
     inline "ADD R0, 1";
 endwhile;
-// [SYSTEM_STATUS_TABLE + 2] = MAX_MEM_PAGE - 81;
-[SYSTEM_STATUS_TABLE + 2] = 128 - 81;
+[SYSTEM_STATUS_TABLE + 2] = NUM_MEM_PAGES - 81;
 [SYSTEM_STATUS_TABLE + 3] = 0;
 
 // Initialize semaphore table

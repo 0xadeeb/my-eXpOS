@@ -7,12 +7,10 @@
 !tools/*
 !*l
 *l/*
-!expl/shell_progs
-!expl/shell_progs/*.expl
-!*l/*l_progs
+!*l/*_progs
 !*l/samples
-!*l/*l_progs/*.*l
+!*l/*_progs/*.*l
 !*l/samples/*.*l
-!*l/*l_progs/asg*
-!*l/*l_progs/asg*/*.*l
-!*l/*l_progs/asg*/*.dat
+!*l/*_progs/asg*
+!*l/*_progs/asg*/*.*l
+!*l/*_progs/asg*/*.dat

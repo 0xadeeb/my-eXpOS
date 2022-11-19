@@ -1,0 +1,7 @@
+#+title: Project eXpOS
+
+* Introduction
+Implementation of experimental operating system
+
+* Instruction
+Run ~./download.sh~ and then ~make~
