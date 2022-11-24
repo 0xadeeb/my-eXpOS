@@ -55,7 +55,6 @@ if ( arg1 != -1 ) then
 
 	alias wordAddress R7;
 	wordAddress =  [[PTBR + 2 * (userSP - 3) / PAGE_SIZE] * PAGE_SIZE + (userSP - 3) % PAGE_SIZE];  //virtual address
-	wordAddress = [PTBR + 2 * wordAddress / PAGE_SIZE] * PAGE_SIZE + (wordAddress % PAGE_SIZE);		//physical address
 
 	if ([openTableEntry] == INODE_ROOT) then
 		if (lseek == 8 * MAX_FILE_NUM) then
@@ -63,6 +62,7 @@ if ( arg1 != -1 ) then
 			goto release_and_return;
 		endif;
 
+		wordAddress = [PTBR + 2 * wordAddress / PAGE_SIZE] * PAGE_SIZE + (wordAddress % PAGE_SIZE);		//physical address
 		[wordAddress] = [ROOT_FILE + lseek];
 	else 
 		if (lseek == [inodeEntry + 2]) then

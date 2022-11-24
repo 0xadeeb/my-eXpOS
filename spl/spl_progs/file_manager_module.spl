@@ -112,7 +112,7 @@ endif;
 if (functionNum == BUFFERED_READ) then
     alias blockNo R2;
 	alias offset R3;
-	alias writeAdr R4;
+	alias writeAdr R4; // logical address
 
     alias bufferIdx R5;
     bufferIdx = blockNo % MAX_BUFFER;
@@ -152,6 +152,7 @@ if (functionNum == BUFFERED_READ) then
         [bufferEntry] = blockNo;
     endif;
 
+	writeAdr = [PTBR + 2 * writeAdr / PAGE_SIZE] * PAGE_SIZE + (writeAdr % PAGE_SIZE);		//physical address
     [writeAdr] = [BUFFER + PAGE_SIZE * bufferIdx + offset];
 
     multipush(R1);
