@@ -107,6 +107,10 @@ loadi(49, 62);
 loadi(50 ,63);
 loadi(51 ,64);
 
+//pager module (module 6)
+loadi(52, 65);
+loadi(53, 66);
+
 //inode table and user table
 loadi(59, 3);
 loadi(60, 4);
@@ -116,12 +120,6 @@ loadi(61, 2);
 
 //root file
 loadi(62, 5);
-
-// Current user to kernel
-[SYSTEM_STATUS_TABLE] = KERNEL;
-
-[TERMINAL_STATUS_TABLE] = 0;
-[DISK_STATUS_TABLE] = 0;
 
 // Init process
 alias processTable R0;
@@ -174,6 +172,7 @@ processTable = PROCESS_TABLE + 16 * SHELL_PROCESS;
 pageTable = PAGE_TABLE_BASE + 20 * SHELL_PROCESS;
 [processTable] = 0;
 [processTable + 1] = SHELL_PROCESS;
+[processTable + 2] = LOGIN_PROCESS;
 [processTable + 3] = ROOT;
 [processTable + 4] = TERMINATED;
 [processTable + 11] = 80;
@@ -198,7 +197,7 @@ pageTable = PAGE_TABLE_BASE + 20 * SHELL_PROCESS;
 [pageTable + 8] = 67;
 [pageTable + 9] = "0100";
 [pageTable + 10] = 68;
-[pageTable + 11] = "0110";
+[pageTable + 11] = "0100";
 [pageTable + 12] = -1;
 [pageTable + 13] = "0000";
 [pageTable + 14] = -1;
@@ -239,17 +238,18 @@ endwhile;
 [DISK_MAP_TABLE + 25] = 10;
 
 alias i R0;
-i = 3;
+i = SHELL_PROCESS;
 while (i < MAX_PROC_NUM) do
-    [PROCESS_TABLE + i * 16] = -1;
-    [PROCESS_TABLE + i * 16 + 4] = TERMINATED;
+	R1 = PROCESS_TABLE + i * 16;
+    [R1] = 0;
+    [R1 + 4] = TERMINATED;
     inline "ADD R0, 1";
 endwhile;
 
 // initialize MEMORY_FREE_LIST
 i = 0;
 // For init, idle and shell programs
-while (i <= 80) do
+while (i <= 82) do
     [MEMORY_FREE_LIST + i] = 1;
     inline "ADD R0, 1";
 endwhile;
@@ -259,39 +259,52 @@ while (i < NUM_MEM_PAGES) do
     [MEMORY_FREE_LIST + i] = 0;
     inline "ADD R0, 1";
 endwhile;
-[SYSTEM_STATUS_TABLE + 2] = NUM_MEM_PAGES - 81;
-[SYSTEM_STATUS_TABLE + 3] = 0;
+
+// Current user to kernel
+[SYSTEM_STATUS_TABLE] = KERNEL;
+
+[TERMINAL_STATUS_TABLE] = 0;
+[DISK_STATUS_TABLE] = 0;
+
+[SYSTEM_STATUS_TABLE + 2] = NUM_MEM_PAGES - 83;			//free mem count
+[SYSTEM_STATUS_TABLE + 3] = 0;							//wait mem count
+[SYSTEM_STATUS_TABLE + 4] = 0;							//swapped count
+[SYSTEM_STATUS_TABLE + 5] = 0;							//paging status
 
 // Initialize semaphore table
 i = 0;
 while (i < MAX_SEM_COUNT) do
-    [SEMAPHORE_TABLE + 4 * i] = -1;
-    [SEMAPHORE_TABLE + 4 * i + 1] = 0;
+	R1 = SEMAPHORE_TABLE + 4 * i;
+    [R1] = -1;
+    [R1 + 1] = 0;
     inline "ADD R0, 1";
 endwhile;
 
 // Initialize file status table
 i = 0;
 while (i < MAX_FILE_NUM) do
-    [FILE_STATUS_TABLE + 4 * i] = -1;
-    [FILE_STATUS_TABLE + 4 * i + 1] = -1;
+	R1 = FILE_STATUS_TABLE + 4 * i;
+    [R1] = -1;
+    [R1 + 1] = -1;
     inline "ADD R0, 1";
 endwhile;
 
 // Initialize buffer table
 i = 0;
 while (i < MAX_BUFFER) do
-    [BUFFER_TABLE + 4 * i] = -1;
-    [BUFFER_TABLE + 4 * i + 1] = 0;
-    [BUFFER_TABLE + 4 * i + 2] = -1;
+	R1 = BUFFER_TABLE + 4 * i;
+    [R1] = -1;
+    [R1 + 1] = 0;
+    [R1 + 2] = -1;
     inline "ADD R0, 1";
 endwhile;
 
 // Initialize open file table
 i = 0;
 while (i < MAX_OPENFILE_NUM) do
-    [OPEN_FILE_TABLE + 4 * i] = -1;
-    [OPEN_FILE_TABLE + 4 * i + 1] = 0;
+	R1 = OPEN_FILE_TABLE + 4 * i;
+    [R1] = -1;
+    [R1 + 1] = 0;
     inline "ADD R0, 1";
 endwhile;
 

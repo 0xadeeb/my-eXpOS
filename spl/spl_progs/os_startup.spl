@@ -3,7 +3,7 @@ loadi(54, 67);
 loadi(55, 68);
 
 // load idle
-loadi(69,11);
+loadi(69, 11);
 
 SP = 76 * PAGE_SIZE - 1;
 
@@ -54,6 +54,53 @@ call BOOT_MODULE;
 
 // Idle program PID
 [SYSTEM_STATUS_TABLE + 1] = IDLE_PROCESS;
+
+//swapper daemon
+alias processTable R0;
+processTable = PROCESS_TABLE + PT_ENTRY_SIZE * SWAPPER_DAEMON;
+alias pageTable R1;
+pageTable = PAGE_TABLE_BASE + 20 * SWAPPER_DAEMON;
+
+[processTable + 0] = 0;
+[processTable + 1] = SWAPPER_DAEMON;
+[processTable + 3] = KERNEL;
+[processTable + 4] = CREATED;
+[processTable + 11] = 82;
+[processTable + 12] = 0;
+[processTable + 13] = 8 * PAGE_SIZE;
+[processTable + 14] = pageTable;
+[processTable + 15] = MAX_PROC_PAGES;
+
+//Library
+[pageTable + 0] = -1;
+[pageTable + 1] = "0000";
+[pageTable + 2] = -1;
+[pageTable + 3] = "0000";
+
+//Heap
+[pageTable + 4] = -1;
+[pageTable + 5] = "0000";
+[pageTable + 6] = -1;
+[pageTable + 7] = "0000";
+
+//Code
+[pageTable + 8] = 69;
+[pageTable + 9] = "0100";
+[pageTable + 10] = -1;
+[pageTable + 11] = "0000";
+[pageTable + 12] = -1;
+[pageTable + 13] = "0000";
+[pageTable + 14] = -1;
+[pageTable + 15] = "0000";
+
+//Stack
+[pageTable + 16] = 81;
+[pageTable + 17] = "0110";
+[pageTable + 18] = -1;
+[pageTable + 19] = "0000";
+
+//IP in top of the stack
+[81 * PAGE_SIZE] = [69 * PAGE_SIZE + 1];
 
 SP = 8 * PAGE_SIZE;
 PTBR = PAGE_TABLE_BASE;

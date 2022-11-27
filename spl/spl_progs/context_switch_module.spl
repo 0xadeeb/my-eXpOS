@@ -14,18 +14,30 @@ proc_table_entry = PROCESS_TABLE + currentPID * PT_ENTRY_SIZE;
 alias newPid R2;
 newPid = IDLE_PROCESS;
 
-alias proc R3;
-proc = (currentPID + 1) % MAX_PROC_NUM;
-
-alias status R4;
-while (proc != currentPID) do
-    status = [PROCESS_TABLE + proc * PT_ENTRY_SIZE + 4];
-    if (proc != IDLE_PROCESS && (status == CREATED || status == READY)) then
-        newPid = proc;
-        break;
+//if paging status is set
+if ([SYSTEM_STATUS_TABLE + 5] != 0) then
+    if ([PROCESS_TABLE + PT_ENTRY_SIZE * SWAPPER_DAEMON + 4] != WAIT_DISK) then
+        newPid = SWAPPER_DAEMON;
     endif;
+else
+    alias proc R3;
+    proc = (currentPID + 1) % MAX_PROC_NUM;
+
+    alias status R4;
+    while (proc != currentPID) do
+        status = [PROCESS_TABLE + proc * PT_ENTRY_SIZE + 4];
+        if (
+            proc != IDLE_PROCESS &&
+            proc != SWAPPER_DAEMON &&
+            [PROCESS_TABLE + PT_ENTRY_SIZE * proc + 6] == 0 && // proc is not suspended (swapped)
+            (status == CREATED || status == READY)
+        ) then
+            newPid = proc;
+            break;
+        endif;
         proc = (proc + 1) % MAX_PROC_NUM;
-endwhile;
+    endwhile;
+endif;
 
 [SYSTEM_STATUS_TABLE + 1] = newPid;
 

@@ -1,15 +1,45 @@
-// NOTE: Do not use registers Ri or any of thier aliases 
-// before backup or after restore!!
-
-// Update SP
+// switch to kernel stack
 [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
 SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * PAGE_SIZE - 1;
 backup;
 
+if ([SYSTEM_STATUS_TABLE + 5] != 0) then 
+	// swapping is on
+	if ([SYSTEM_STATUS_TABLE + 1] == SWAPPER_DAEMON) then
+		R1 = [SYSTEM_STATUS_TABLE + 5];
+		R2 = SWAPPER_DAEMON;
+		call PAGER_MODULE;
+	endif;
+	// else if idle is running swapper process is blocked
+	// swapping is going on, so do nothing and skip to context switch
+else
+	// swapping in not on
+	if ([SYSTEM_STATUS_TABLE + 2] < MEM_LOW) then // if mem is low
+		[SYSTEM_STATUS_TABLE + 5] = SWAP_OUT;	
+	else
+		if ([SYSTEM_STATUS_TABLE + 4] != 0) then // if there are swapped procs in disk
+			if ([SYSTEM_STATUS_TABLE + 2] > MEM_HIGH) then // if mem is high
+				[SYSTEM_STATUS_TABLE + 5] = SWAP_IN;
+			else
+				alias proc R0;
+				proc = SHELL_PROCESS + 1;
+				while (proc < SWAPPER_DAEMON) do
+					// if proc in disk and tick > max tick
+					if ([PROCESS_TABLE + PT_ENTRY_SIZE * proc + 6] == 1 && [PROCESS_TABLE + PT_ENTRY_SIZE * proc] > MAX_TICK) then
+						[SYSTEM_STATUS_TABLE + 5] = SWAP_IN;
+						break;
+					endif;
+					proc = proc + 1;
+				endwhile;
+			endif;
+		endif;
+	endif;
+endif;
+
 //update state of current process
 [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 4] = READY;
 
-//update ticks
+//increment tick of all process
 alias PId R0;
 PId = 0;
 while(PId < MAX_PROC_NUM) do

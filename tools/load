@@ -23,6 +23,7 @@ load --module 2 ../spl/spl_progs/memory_manager_module.xsm
 load --module 3 ../spl/spl_progs/file_manager_module.xsm
 load --module 4 ../spl/spl_progs/device_manager_module.xsm
 load --module 5 ../spl/spl_progs/context_switch_module.xsm
+load --module 6 ../spl/spl_progs/pager_module.xsm
 load --module 7 ../spl/spl_progs/boot_module.xsm
 load --library ../expl/library.lib
 load --idle ../expl/kernel_progs/idle.xsm
