@@ -79,7 +79,6 @@ if (sysno == INT_CREATE) then
 endif;
 
 if (sysno == INT_DELETE) then
-    breakpoint;
     alias fileName R2;
     fileName = [[PTBR + 2 * (userSP - 4) / PAGE_SIZE] * PAGE_SIZE + (userSP - 4) % PAGE_SIZE];
 
@@ -172,7 +171,6 @@ if (sysno == INT_DELETE) then
     multipop(R9, R0, R1, R2);
     
     [retAdr] = 0;
-    breakpoint;
 endif;
 
 exit:

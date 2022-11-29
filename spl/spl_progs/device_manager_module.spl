@@ -48,11 +48,14 @@ if (functionNum == DISK_LOAD) then
     [DISK_STATUS_TABLE + 1] = 0; // Load operation
     [DISK_STATUS_TABLE + 2] = pageNo;
     [DISK_STATUS_TABLE + 3] = blockNo;
+
     load(pageNo, blockNo);
+
     [PROCESS_TABLE + currentPID * PT_ENTRY_SIZE + 4] = WAIT_DISK;
 
-    // No need to store context (I hope!)
-    call SCHEDULER;
+	multipush(R1, R2, R3, R4);
+	call CONTEXT_SWITCH;
+	multipop(R1, R2, R3, R4);
     
     return;
 endif;
@@ -70,11 +73,14 @@ if (functionNum == DISK_STORE) then
     [DISK_STATUS_TABLE + 1] = 1; // Store operation
     [DISK_STATUS_TABLE + 2] = pageNo;
     [DISK_STATUS_TABLE + 3] = blockNo;
+    
     store(pageNo, blockNo);
+    
     [PROCESS_TABLE + PT_ENTRY_SIZE * currentPID + 4] = WAIT_DISK;
     
-    // No need to store context (I hope!)
-    call SCHEDULER;
+	multipush(R1, R2, R3, R4);
+	call CONTEXT_SWITCH;
+	multipop(R1, R2, R3, R4);
     
     return;
 endif;

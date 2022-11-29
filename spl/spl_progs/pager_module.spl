@@ -169,10 +169,11 @@ if (functionNum == SWAP_IN) then
     alias page R6;
     page = 2;
     //bring back swapped stack and heap pages
-    while (page < SWAPPER_DAEMON) do
+    while (page < MAX_PROC_PAGES) do
         if ([dmt + page] != -1) then
             multipush(R4, R5, R6);
             R1 = GET_FREE_PAGE;
+			R2 = [SYSTEM_STATUS_TABLE + 1];
             call MEMORY_MANAGER;
             multipop(R5, R6);
             R4 = [dmt + page];

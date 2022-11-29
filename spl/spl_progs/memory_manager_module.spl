@@ -89,6 +89,7 @@ if (functionNum == GET_CODE_PAGE) then
     alias freePage R0;
     multipush(R1, R2, R3);
     R1 = GET_FREE_PAGE;
+    R2 = pid;
     call MEMORY_MANAGER;
     multipop(R1, R2, R3);
 

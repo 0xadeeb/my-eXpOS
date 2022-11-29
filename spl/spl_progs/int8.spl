@@ -21,6 +21,7 @@ alias newPID R2;
 
 multipush(R0, R1, R9);
 R1 = GET_PCB_ENTRY;
+R2 = [SYSTEM_STATUS_TABLE + 1];
 call PROCESS_MANAGER;
 newPID = R0;
 multipop(R0, R1, R9);
@@ -81,6 +82,7 @@ else
     alias childProcessTable R4;
     childProcessTable  = PROCESS_TABLE + PT_ENTRY_SIZE * newPID;
 
+    [childProcessTable + 0] = 0;
     [childProcessTable + 1] = newPID;
     [childProcessTable + 2] = [SYSTEM_STATUS_TABLE + 1];
     [childProcessTable + 3] = [processTable + 3];
