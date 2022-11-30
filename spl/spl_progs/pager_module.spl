@@ -57,13 +57,13 @@ if (functionNum == SWAP_OUT) then
     alias dmt R5;
     dmt = DISK_MAP_TABLE + 10 * swapProc;
 
-    // swap code pages
+    // swap code pages (unshared)
     alias page R6;
     page = 4;
     alias memPg R7;
     while (page < 8) do
         memPg = pt + 2 * page;
-        if ([memPg] != -1) then
+        if ([memPg] != -1 && [MEMORY_FREE_LIST + [memPg]] == 1) then
             multipush(R4, R5, R6, R7);
             R1 = RELEASE_PAGE;
             R2 = [memPg];
@@ -71,8 +71,6 @@ if (functionNum == SWAP_OUT) then
             multipop(R4, R5, R6, R7);
             [memPg] = -1;
             [memPg + 1] = "0000";
-        else 
-            break;
         endif;
         page = page + 1;
     endwhile;

@@ -108,8 +108,8 @@ if (functionNum == GET_SWAP_BLOCK) then
     alias block R0;
     block = DISK_SWAP_AREA;
     while (block < DISK_SIZE) do
-        if ([DISK_FREE_AREA + block] == 0) then
-            [DISK_FREE_AREA + block] = 1;
+        if ([DISK_FREE_LIST + block] == 0) then
+            [DISK_FREE_LIST + block] = 1;
             return;
         endif;
         block = block + 1;

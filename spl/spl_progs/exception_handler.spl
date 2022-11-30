@@ -43,11 +43,12 @@ else
         [PTBR + 7] = "1110";
         multipop(R0);
     else
-        multipush(R0);
+        multipush(R0, EPN);
         R3 = [SYSTEM_STATUS_TABLE + 1];
         R2 = [DISK_MAP_TABLE + 10 * R3 + EPN];
         R1 = GET_CODE_PAGE;
         call MEMORY_MANAGER;
+        multipop(EPN);
         [PTBR + 2 * EPN] = R0;
         [PTBR + 2 * EPN + 1] = "1100";
         multipop(R0);
