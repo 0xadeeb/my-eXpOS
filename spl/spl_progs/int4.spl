@@ -76,6 +76,8 @@ if (sysno == INT_CREATE) then
 	[rootFileEntry + 4] = permissions;
     [retAdr] = 0;
 
+    goto exit;
+
 endif;
 
 if (sysno == INT_DELETE) then
@@ -171,6 +173,7 @@ if (sysno == INT_DELETE) then
     multipop(R9, R0, R1, R2);
     
     [retAdr] = 0;
+    goto exit;
 endif;
 
 exit:

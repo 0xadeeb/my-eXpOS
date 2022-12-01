@@ -57,6 +57,7 @@ if (sysno == INT_OPEN) then
     
     [retAdr] = entry_idx;
     
+    goto exit;
 endif;
 
 if (sysno == INT_CLOSE) then
@@ -79,6 +80,7 @@ if (sysno == INT_CLOSE) then
 
     [resTable + 2 * entry_idx] = -1;
     [retAdr] = 0;
+    goto exit;
 
 endif;
 
@@ -149,6 +151,7 @@ if (sysno == INT_SEEK) then
 	R3 = [openTableEntry];
 	call RESOURCE_MANAGER;
 	multipop(R0, R9);
+    goto exit;
 
 endif;
 

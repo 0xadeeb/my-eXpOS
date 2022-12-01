@@ -8,11 +8,15 @@ begin
     temp = exposcall("Write", -2, "FileName:");
     temp = exposcall("Read", -1, file);
     fd = exposcall("Open", file);
-    temp = exposcall("Read", fd, word);
-    while (temp >= 0) do
-        temp = exposcall("Write", -2, word);
+    if (fd == -1) then
+        temp = exposcall("Write", -2, "File not found");
+    else
         temp = exposcall("Read", fd, word);
-    endwhile;
+        while (temp >= 0) do
+            temp = exposcall("Write", -2, word);
+            temp = exposcall("Read", fd, word);
+        endwhile;
+    endif;
     return 0;
 end
 }

@@ -136,7 +136,7 @@ if (functionNum == SWAP_IN) then
     maxTick = -1;
     alias ptEntry R6;
 
-    while (i < MAX_PROC_NUM) do
+    while (i < SWAPPER_DAEMON) do
         ptEntry = PROCESS_TABLE + PT_ENTRY_SIZE * i;
         if (
             [ptEntry + 6] == 1 &&
@@ -171,23 +171,24 @@ if (functionNum == SWAP_IN) then
         if ([dmt + page] != -1) then
             multipush(R4, R5, R6);
             R1 = GET_FREE_PAGE;
-			R2 = [SYSTEM_STATUS_TABLE + 1];
+            R2 = [SYSTEM_STATUS_TABLE + 1];
             call MEMORY_MANAGER;
             multipop(R5, R6);
-            R4 = [dmt + page];
+
             multipush(R0, R5, R6);  //check if R0 is -1
+            R4 = [dmt + page];
             R3 = R0;
             R2 = SWAPPER_DAEMON;
             R1 = DISK_LOAD;
             //breakpoint;
             call DEVICE_MANAGER;
-
             multipop(R5, R6);
-            R2 = [dmt + page];
+
             multipush(R5, R6);
+            R3 = SWAPPER_DAEMON;
+            R2 = [dmt + page];
             R1 = RELEASE_BLOCK;
             call MEMORY_MANAGER;
-
             multipop(R4, R0, R5, R6);
 
             [pt + 2 * page] = R0;

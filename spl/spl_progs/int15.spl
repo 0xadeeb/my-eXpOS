@@ -17,8 +17,8 @@ userSP = [processTable + 13];
 alias retAdr R1;
 retAdr = [PTBR + 2 * (userSP - 1) / PAGE_SIZE] * PAGE_SIZE + (userSP - 1) % PAGE_SIZE;
 
-// Check if logged in user is root or kernel and if current process is init or shell
-if ([SYSTEM_STATUS_TABLE] > ROOT  || [SYSTEM_STATUS_TABLE + 1] > SHELL_PROCESS) then
+// Check if logged in user is root and if current process running is the shell
+if ([SYSTEM_STATUS_TABLE] != ROOT  || [SYSTEM_STATUS_TABLE + 1] != SHELL_PROCESS) then
     [retAdr] = -1;
     [processTable + 9] = 0;
     SP = userSP;
